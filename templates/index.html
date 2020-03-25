@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="static/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+        integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+        crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+        integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+        crossorigin=""></script>
+    <script rel="Scripts" type="text/javascript" src="./static/function.js"></script>
+    <script rel="Images" type="image" src="static/redMarker.png"></script>
+</head>
+
+<body onload="connect()">
+    <div class="title">
+        <h2 style="font-family: verdana; font-weight:bold;">Trilaterazione WiFi tramite l'utilizzo di raspberry PI
+        </h2>
+        <h3 style="font-family: verdana;">Prima di iniziare, inserire le coordinate del dispositivo per la
+            rilevazione dei dati</h3>
+    </div>
+    <div class="container">
+        <div id="form">
+            <div>
+                <label for="nome">Nome</label>
+                <input type="text" id="nome" placeholder="Inserire il Nome" required>
+            </div>
+            <div>
+                <label for="lat">Latitudine</label>
+                <input type="text" id="lat" placeholder="Inserire la latitudine" required>
+            </div>
+            <div>
+                <label for="lng">Longitudine</label>
+                <input type="text" id="lng" placeholder="Inserire la longitudine" required>
+            </div>
+        </div>
+
+        <div id="btn">
+            <input type="submit" value="Aggiungi il dispositivo" id="aggiungiDispositivo" onclick="addDevice()" style="height: 40px;">
+        </div>
+
+    </div>
+
+
+    <div class="dispositivi">
+        <table style="width:100%; border:solid;">
+            <tr>
+                <th>Nome</th>
+                <th>Latitudine</th>
+                <th>Longitudine</th>
+            </tr>
+        </table>
+        <table id="tabellaDispositivi" style="width:100%;">
+        </table>
+        <input type="submit" value="elimina Dispositivi"  onclick="removeDevice()">
+    </div>
+
+
+
+    <div id="map"></div>
+    <script>
+        var mylat = '41.86956';
+        var mylong = '12.524414';
+        var myzoom = '4';
+        var map = L.map('map').setView([mylat, mylong], myzoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+    </script>
+
+    <div class="coordinate">
+        <p>Se non conosci le coordinate precise, premi il pulsante qui sotto perchè vengano generate
+        </p>
+        <div>
+            <input type="submit" value="Trova la posizione" id="findCoordinate" onclick="getLocation()">
+        </div>
+    </div>
+    </div>
+</body>
+
+</html>
