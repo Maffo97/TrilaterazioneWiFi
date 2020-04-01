@@ -39,10 +39,10 @@ input[type=text], select {
 }
 #map { 
      width: 950px;
-     height: 490px;
+     height: 425px;
      position: absolute;
      left: 30%;
-     top: 20%;
+     top: 30%;
  }
 
  #form {
@@ -52,12 +52,31 @@ input[type=text], select {
  }
 
  #btn{
-
+   width: 160px;
+   height: 40px;
    float: right;
-   position: relative;
+   position: absolute;
    top: 18px;
    right: 20px;
  }
+
+ #start{
+  width: 160px;
+  height: 40px;
+  float: right;
+  position: absolute;
+  top: 100px;
+  right: 20px;
+}
+
+#elimina{
+  width: 160px;
+  height: 40px;
+  float: right;
+  position: absolute;
+  top: 178px;
+  right: 20px;
+}
 
  .coordinate{
    top: 79%;
@@ -70,23 +89,25 @@ input[type=text], select {
    text-align: center;
  }
 
- .title{
+ .dispositivi{
    width: 950px;
+   height: 170px;
    position: absolute;
    left: 30%;
    text-align: center;
    border-radius: 5px;
    background-color: #f2f2f2;
+   overflow:auto;
  }
 
- .dispositivi{
+ .title{
   background-color: #f2f2f2;
   border-radius: 5px;
   padding: 5px;
   width: 385px;
   height: 200px;
   text-align: center;
-  overflow:auto;
+
 
  }
  

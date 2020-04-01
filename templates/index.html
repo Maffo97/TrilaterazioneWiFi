@@ -15,12 +15,18 @@
 </head>
 
 <body onload="connect()">
-    <div class="title">
-        <h2 style="font-family: verdana; font-weight:bold;">Trilaterazione WiFi tramite l'utilizzo di raspberry PI
-        </h2>
-        <h3 style="font-family: verdana;">Prima di iniziare, inserire le coordinate del dispositivo per la
-            rilevazione dei dati</h3>
+    <div class="dispositivi">
+        <table id="tabellaDispositivi" style="width:100%; border:solid;">
+            <th>Nome</th>
+            <th>Latitudine</th>
+            <th>Longitudine</th>
+            <th>Indoor</th>
+            <th>Durata</th>
+            <th></th>
+        </table>
+
     </div>
+
     <div class="container">
         <div id="form">
             <div>
@@ -37,24 +43,16 @@
             </div>
         </div>
 
-        <div id="btn">
-            <input type="submit" value="Aggiungi il dispositivo" id="aggiungiDispositivo" onclick="addDevice()" style="height: 40px;">
-        </div>
 
+
+        <input type="submit" value="Aggiungi il dispositivo" id="btn" onclick="addDevice()">
+        <input type="submit" value="elimina Dispositivi" id="elimina" onclick="removeDevice()">
     </div>
 
 
-    <div class="dispositivi">
-        <table style="width:100%; border:solid;">
-            <tr>
-                <th>Nome</th>
-                <th>Latitudine</th>
-                <th>Longitudine</th>
-            </tr>
-        </table>
-        <table id="tabellaDispositivi" style="width:100%;">
-        </table>
-        <input type="submit" value="elimina Dispositivi"  onclick="removeDevice()">
+
+    <div class="title">
+        <h3>Trilaterazione WiFi tramite l'utilizzo di raspberry PI</h3>
     </div>
 
 

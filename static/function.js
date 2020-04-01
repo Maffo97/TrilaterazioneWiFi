@@ -3,6 +3,7 @@
 var socket = null;
 var markers = L.layerGroup();
 var cMarkers = L.layerGroup();
+var buttonCounter = 0;
 //---------------------------------------------------------------------
 
 
@@ -22,17 +23,50 @@ function connect() {
         var wsMsg = messageEvent.data;
         if (wsMsg.split(':')[0] == "$insert") {
             if (wsMsg.split(':')[1] == "200") {
+
                 console.log(wsMsg.substring(7));
                 var lat = document.getElementById("lat").value;
                 var lng = document.getElementById("lng").value;
                 var nome = document.getElementById("nome").value;
+
+                //creazione delle righe per nome
                 var table = document.getElementById("tabellaDispositivi");
-                var row = table.insertRow(0);
+                var row = table.insertRow(1);
                 var cell1 = row.insertCell(0);
                 var cell2 = row.insertCell(1);
                 var cell3 = row.insertCell(2);
+                var cell4 = row.insertCell(3);
+                var cell5 = row.insertCell(4);
+                var cell6 = row.insertCell(5);
+
+                //creazione della checkbox indoor 
+                var checkbox = document.createElement('input');
+                checkbox.type = "checkbox";
+                checkbox.id = "check" + buttonCounter;
+                //checkbox.id = "id"; 
+
+                //creazione input type number
+                var x = document.createElement("INPUT");
+                x.setAttribute("type", "number");
+                x.value = 60;
+                x.style.width = "50px";
+                x.id = "time" + buttonCounter;
+
+                //creazione pulsante avvio scansione
+                var button = document.createElement("INPUT");
+                button.setAttribute("type", "submit");
+                button.value = "inizia scansione";
+                button.id = "scan" + buttonCounter;
+                button.onclick = function () { scan(lat, lng) };
+                buttonCounter++;
+
+
                 cell2.innerHTML = lat;
                 cell3.innerHTML = lng;
+                cell4.appendChild(checkbox);
+                cell5.appendChild(x);
+                cell6.appendChild(button);
+
                 if (nome.trim() == "") {
                     cell1.innerHTML = "Dispositivo";
                 }
@@ -109,12 +143,12 @@ function removeDevice() {
     if (socket.readyState == 1) {
         if (confirm("Sei sicuro di rimuovere definitivamente tutti i dispositivi all'interno del database?")) {
             socket.send("$delete-DELETE FROM Dispositivi");
-            var Parent = document.getElementById("tabellaDispositivi");
+            var table = document.getElementById("tabellaDispositivi");
             cMarkers.clearLayers();
-            while (Parent.hasChildNodes()) {
-                Parent.removeChild(Parent.firstChild);
+            console.log(table.rows.length);
+            while (table.rows.length != 1) {
+                table.deleteRow(table.rows.length - 1)
             }
-
         }
     }
 }
@@ -182,4 +216,15 @@ function createCustomMarker(nome, lat, lng) {
 }
 //---------------------------------------------------------------------
 
+//funzione che da inizio alla scansione dei pacchetti circostanti
+//---------------------------------------------------------------------
+function scan(lat, lng) {
+    if (socket.readyState == 1) {
+        if (lat != null && lng != null){
+            //da aggiungere l'inserimento del tempo
+            socket.send("$scan-SELECT id FROM Dispositivi WHERE latitudine = " + lat + " AND longitudine = " + lng);
+        }
+    }
 
+}
+//---------------------------------------------------------------------
