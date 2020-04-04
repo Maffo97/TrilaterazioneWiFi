@@ -8,9 +8,15 @@ from scapy.all import *
 from scapy.layers.dot11 import Dot11
 from colorama import Fore, Style
 from datetime import datetime
+from mac_vendor_lookup import MacLookup
+
 
 indexDevice = 0
+devices = set()
+dev = set()
 
+#query per la media
+#SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress
 
 # creazione classe per i device che vengono trovati
 #########################################################
@@ -20,26 +26,18 @@ class WiFidevice:
         self.dbm = dbm
 #########################################################
 
+def findVendor(macAdress):
+    mac = MacLookup()
+    try:
+        return mac.lookup(macAdress)
+    except:
+        pass
+
 # metodo per sapere l'orario
 #########################################################
 def tempo():
     return str(datetime.now().strftime("%H:%M:%S"))
 #########################################################
-
-#packet handler
-#########################################################
-devices = set()
-def PacketHandler(pkt):
-    if pkt.haslayer(Dot11ProbeReq):
-
-        print(pkt.dBm_AntSignal)
-        dot11_layer = pkt.getlayer(Dot11)
-                            
-        if dot11_layer.addr2 and (dot11_layer.addr2 not in devices):
-            devices.add(dot11_layer.addr2)
-            dev.add(WifiDevice(dot11_layer.addr2,str(pkt.dBm_AntSignal)))
-#########################################################
-
 
 # Creazione del database
 #########################################################
@@ -55,22 +53,24 @@ try:
     cursor.execute(sqlite_create_table_query)
     sqliteConnection.commit()
     sqlite_create_table_query = '''CREATE TABLE ProbeRequest (
-                                macAdress CHAR(48) PRIMARY KEY NOT NULL,
-                                vendor CHAR(20),
+                                macAdress TEXT NOT NULL,
                                 nodeID INTEGER NOT NULL,
                                 rssi REAL NOT NULL,
-                                ts TIME NOT NULL,
+                                distance FLOAT NOT NULL,
+                                vendor TEXT,
+                                ts DATETIME NOT NULL,
+                                UNIQUE(macAdress, rssi, nodeID),
                                 FOREIGN KEY(nodeID) REFERENCES Dispositivi(ID))'''
     cursor.execute(sqlite_create_table_query)
     sqliteConnection.commit()
-    print(Fore.GREEN + "[Server][" + tempo() + "]: Record inserito correttamente nel database, numero di righe: " +
+    print(Fore.GREEN + "[SERVER][" + tempo() + "]: Record inserito correttamente nel database, numero di righe: " +
           Fore.RESET, cursor.rowcount)
     cursor.close()
 
 
 except sqlite3.Error as error:
     print(Fore.RED +
-          "[Server][" + tempo() + "]: Errore durante l'esecuzione dello script sql" + Fore.RESET, error)
+          "[SERVER][" + tempo() + "]: Errore durante l'esecuzione dello script sql" + Fore.RESET, error)
 finally:
     if (sqliteConnection):
         sqliteConnection.close()
@@ -81,17 +81,16 @@ finally:
 # Inizializzazione socket
 #########################################################
 ipAddress = socket.gethostbyname(socket.gethostname())
-interface = "wlan0"
+interface = "wlx00c0caa71dd5"
 port = 8888
 #########################################################
 
 # Debug
-#########################################################
+###############################SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress##########################
 print(f"[From server]:IP Address: {str(ipAddress)}")
 print(f"[From server]:Interface: {str(interface)}")
 print(f"[From server]:Port: {str(port)}")
 #########################################################
-
 
 # Medodo che permette il collegamento al db e l'esecuzione della query
 #########################################################
@@ -107,24 +106,41 @@ def executeQuery(query, data):
             try:
                 indexDevice = cursor.fetchall()
             except sqlite3.Error as error:
-                print(Fore.RED + "[Server][" + tempo() +
+                print(Fore.RED + "[SERVER][" + tempo() +
                       "]: Errore durante l'esecuzione dello script" + Fore.RESET, error)
         else:
             cursor.execute(query, data)
         sqliteConnection.commit()
-        print(Fore.GREEN + "[Server][" + tempo() + "]: Query eseguita correttamente, numero di righe:" + Fore.RESET,
+        print(Fore.GREEN + "[SERVER][" + tempo() + "]: Query eseguita correttamente, numero di righe:" + Fore.RESET,
               cursor.rowcount)
         cursor.close()
         return Flag
     except sqlite3.Error as error:
         Flag = False
-        print(Fore.RED + "[Server][" + tempo() +
+        print(Fore.RED + "[SERVER][" + tempo() +
               "]: Errore durante l'esecuzione dello script" + Fore.RESET, error)
         return Flag
     finally:
         if (sqliteConnection):
             sqliteConnection.close()
-            # print(#Fore.GREEN + "[Server][" + tempo() + "]:Connessione con sqlite terminata" + Fore.RESET)
+            # print(#Fore.GREEN + "[SERVER][" + tempo() + "]:Connessione con sqlite terminata" + Fore.RESET)
+#########################################################
+
+#packet handler
+#########################################################
+def PacketHandler(pkt):
+    if pkt.haslayer(Dot11ProbeReq):
+        dot11Layer = pkt.getlayer(Dot11)
+        macAdr = str(dot11Layer.addr2)
+        RSSI = pkt.dBm_AntSignal
+        time = datetime.now().strftime("%d/%m/%y-%h:%m:%s")
+        distance = 0
+        nodeID = indexDevice[0][0]
+        vendor = findVendor(macAdr)
+
+        query = "INSERT INTO ProbeRequest(macAdress, nodeID, rssi, distance, vendor, ts) VALUES (?,?,?,?,?,?)"
+        data = (macAdr, nodeID, RSSI, distance, vendor, time)
+        executeQuery(query, data)     
 #########################################################
 
 
@@ -143,7 +159,7 @@ async def echo(websocket, path):
             lng = message.split("-")[3]
             nome = message.split("-")[4]
             data = (nome, lat, lng)
-            print("[Client][" + tempo() + "]: INSERT INTO DB nome:" + nome +
+            print("[CLIENT][" + tempo() + "]: INSERT INTO DB nome:" + nome +
                   " latitudine: " + lat + " longitudine: " + lng)
             if(executeQuery(query, data)):
                 await websocket.send("$insert:200:OK")
@@ -156,7 +172,7 @@ async def echo(websocket, path):
         if protocol == "$delete":
             query = message.split("-")[1]
             data = None
-            print("[Client][" + tempo() + "]: DELETE FROM Dispositivi")
+            print("[CLIENT][" + tempo() + "]: DELETE FROM Dispositivi")
             if(executeQuery(query, data)):
                 await websocket.send("$200:OK")
             else:
@@ -165,32 +181,33 @@ async def echo(websocket, path):
 
         # inizio scansione e inserimento dei dati nel database
         #########################################################
-        if protocol == "$scan":
-            timer = 60
+        if protocol == "$scan":     
+            timer = 60    
             query = message.split("-")[1]
             data = None
             if(executeQuery(query, data)):
                 await websocket.send("$200:OK")
             else:
                 await websocket.send("$400:Bad Request")
-            print("[Client][" + tempo() +
-                  "]:Scan del dispositivo: " + str(indexDevice) + "per " + timer + " secondi")
-            t = AsyncSniffer(iface=interface, prn=PacketHandler)
-            t.start()
-            tempo = int(attributes)
-            time.sleep(timer)
-            print(f"[scanning for]: {str(tempo)} seconds")
-            t.stop()
-            # print(t)
+            msg = "[CLIENT][{}]:Scan del dispositivo: {} per {} secondi"
+            print(msg.format(tempo(),str(indexDevice[0][0]),timer))
+            
+           
 
-            await websocket.send("numDev$"+str(len(dev)))
-            for d in dev:
-                print(f"To client:" + "dev$"+d.macAddr + "---"+d.dbm)
-                await websocket.send("dev$"+d.macAddr + "---"+d.dbm)
+            t = AsyncSniffer(iface = interface, prn = PacketHandler)
+            t.start()
+            time.sleep(timer)
+            t.stop() 
+
+            print("[SERVER][" + tempo() + "]: scansione terminata")
+
+
+            #tempo = int(attributes)
+            # print(t)   
         #########################################################
 
 
 asyncio.get_event_loop().run_until_complete(
     websockets.serve(echo, '127.0.0.1', port))
 asyncio.get_event_loop().run_forever()
-#########################################################
+##########################################RED###############
