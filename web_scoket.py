@@ -12,26 +12,68 @@ from mac_vendor_lookup import MacLookup
 
 
 indexDevice = 0
-devices = set()
-dev = set()
 
 #query per la media
 #SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress
 
-# creazione classe per i device che vengono trovati
+
+#nel mio ambiente casalingo il coefficiente di dispersione del segnale
+#e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 37
+pathLossC = 3
+
+# creazione classe per i vendor e rispettivo RSSI d0
 #########################################################
-class WiFidevice:
-    def __init__(self, macAddr, dbm):
-        self.macAddr = macAddr
-        self.dbm = dbm
+class VendorRSSId0:
+    vendor = None
+    RSSId0 = None
+    def __init__(self, vendor, RSSId0):
+        self.vendor = vendor
+        self.RSSId0 = RSSId0
+    def getVendor(self):
+        return vendor
+
+Apple = ("Apple, Inc.",-38.5)
+Samsung = ("Samsung Electronics Co.,Ltd",-31)
+
+Vendor = [Apple,Samsung]
 #########################################################
 
+# calcolo della distanza 
+#########################################################
+def distance(vendor, RSSI):
+    RSSId0 = -37
+    for x in Vendor:
+        if(vendor == x[0]):
+            RSSId0 = x[1]
+            break
+
+    #print(str(RSSI) + " " + vendor + " " + str(RSSId0) + " " + str(pathLossC))
+    return pow(10,((RSSId0 - RSSI)/(10*pathLossC)))
+
+# metodo per scoprire il vendor in base al mac adress
+#########################################################
 def findVendor(macAdress):
     mac = MacLookup()
     try:
         return mac.lookup(macAdress)
     except:
         pass
+#########################################################
+
+#A function to apply trilateration formulas to return the (x,y) intersection point of three circles
+#########################################################
+def trilateration(x1,y1,r1,x2,y2,r2,x3,y3,r3):
+  A = 2*x2 - 2*x1
+  B = 2*y2 - 2*y1
+  C = r1**2 - r2**2 - x1**2 + x2**2 - y1**2 + y2**2
+  D = 2*x3 - 2*x2
+  E = 2*y3 - 2*y2
+  F = r2**2 - r3**2 - x2**2 + x3**2 - y2**2 + y3**2
+  x = (C*E - F*B) / (E*A - B*D)
+  y = (C*D - A*F) / (B*D - A*E)
+  return x,y
+#########################################################
+
 
 # metodo per sapere l'orario
 #########################################################
@@ -133,13 +175,14 @@ def PacketHandler(pkt):
         dot11Layer = pkt.getlayer(Dot11)
         macAdr = str(dot11Layer.addr2)
         RSSI = pkt.dBm_AntSignal
-        time = datetime.now().strftime("%d/%m/%y-%h:%m:%s")
-        distance = 0
+        time = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+        
         nodeID = indexDevice[0][0]
         vendor = findVendor(macAdr)
+        dst = distance(vendor, RSSI)
 
         query = "INSERT INTO ProbeRequest(macAdress, nodeID, rssi, distance, vendor, ts) VALUES (?,?,?,?,?,?)"
-        data = (macAdr, nodeID, RSSI, distance, vendor, time)
+        data = (macAdr, nodeID, RSSI, dst, vendor, time)
         executeQuery(query, data)     
 #########################################################
 
@@ -182,7 +225,7 @@ async def echo(websocket, path):
         # inizio scansione e inserimento dei dati nel database
         #########################################################
         if protocol == "$scan":     
-            timer = 60    
+            timer = 60 
             query = message.split("-")[1]
             data = None
             if(executeQuery(query, data)):
