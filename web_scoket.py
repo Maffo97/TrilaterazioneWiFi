@@ -19,7 +19,7 @@ indexDevice = 0
 
 #nel mio ambiente casalingo il coefficiente di dispersione del segnale
 #e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 37
-pathLossC = 3
+pathLossC = 3.08
 
 # creazione classe per i vendor e rispettivo RSSI d0
 #########################################################
@@ -32,8 +32,8 @@ class VendorRSSId0:
     def getVendor(self):
         return vendor
 
-Apple = ("Apple, Inc.",-38.5)
-Samsung = ("Samsung Electronics Co.,Ltd",-31)
+Apple = ("Apple, Inc.",-33)
+Samsung = ("Samsung Electronics Co.,Ltd",-29)
 
 Vendor = [Apple,Samsung]
 #########################################################
@@ -41,7 +41,7 @@ Vendor = [Apple,Samsung]
 # calcolo della distanza 
 #########################################################
 def distance(vendor, RSSI):
-    RSSId0 = -37
+    RSSId0 = -32
     for x in Vendor:
         if(vendor == x[0]):
             RSSId0 = x[1]
@@ -101,7 +101,6 @@ try:
                                 distance FLOAT NOT NULL,
                                 vendor TEXT,
                                 ts DATETIME NOT NULL,
-                                UNIQUE(macAdress, rssi, nodeID),
                                 FOREIGN KEY(nodeID) REFERENCES Dispositivi(ID))'''
     cursor.execute(sqlite_create_table_query)
     sqliteConnection.commit()
@@ -152,6 +151,11 @@ def executeQuery(query, data):
                       "]: Errore durante l'esecuzione dello script" + Fore.RESET, error)
         else:
             cursor.execute(query, data)
+            try:
+                indexDevice = cursor.fetchall()
+            except sqlite3.Error as error:
+                print(Fore.RED + "[SERVER][" + tempo() +
+                      "]: Errore durante l'esecuzione dello script" + Fore.RESET, error)
         sqliteConnection.commit()
         print(Fore.GREEN + "[SERVER][" + tempo() + "]: Query eseguita correttamente, numero di righe:" + Fore.RESET,
               cursor.rowcount)
@@ -191,7 +195,7 @@ def PacketHandler(pkt):
 #########################################################
 async def echo(websocket, path):
     async for message in websocket:
-        # print(f"[From client]: {message}")
+         #rint(f"[From client]: {message}")
         protocol = message.split("-")[0]
 
         # inserimento dati nel database
@@ -225,7 +229,7 @@ async def echo(websocket, path):
         # inizio scansione e inserimento dei dati nel database
         #########################################################
         if protocol == "$scan":     
-            timer = 60 
+            timer = 60
             query = message.split("-")[1]
             data = None
             if(executeQuery(query, data)):
@@ -249,6 +253,23 @@ async def echo(websocket, path):
             # print(t)   
         #########################################################
 
+        # invio dei dati presenti nel database
+        #########################################################
+        if protocol == "$db":
+            query = message.split("-")[1]
+            print(query)
+            data = None
+            print("[CLIENT][" + tempo() + "]: SELECT * FROM Dispositivi")
+            if(executeQuery(query, data)):
+                data = ""
+                for x in indexDevice:
+                    for y in x:
+                        data = data + "-" + str(y)
+                    await websocket.send("$db"+ data)   
+                    data = ""                           
+            else:
+                await websocket.send("$400:BadRequest")
+        #########################################################
 
 asyncio.get_event_loop().run_until_complete(
     websockets.serve(echo, '127.0.0.1', port))

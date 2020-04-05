@@ -10,13 +10,20 @@ var buttonCounter = 0;
 //funzione per la connessione al socket. Viene avviata tramite l'onload del body della pagina html
 //con i vari metodi on open e on message.
 //---------------------------------------------------------------------
-function connect() {
+async function connect() {
+    var btn = document.getElementById("btn");
+    var elimina = document.getElementById("elimina");
+    var find = document.getElementById("findCoordinate");
+    btn.disabled = false;
+    elimina.disabled = false;
+    find.disabled = false;
+
     var ipaddress = "127.0.0.1";
     var port = 8888;
     socket = new WebSocket("ws:" + ipaddress + ":" + port);
 
     socket.onopen = function (event) {
-        //socket.send("Connessione iniziata");
+        socket.send("$db-SELECT * FROM Dispositivi");
         console.log("Connessione col server effettuata");
     };
     socket.onmessage = function (messageEvent) {
@@ -28,53 +35,16 @@ function connect() {
                 var lat = document.getElementById("lat").value;
                 var lng = document.getElementById("lng").value;
                 var nome = document.getElementById("nome").value;
-
-                //creazione delle righe per nome
-                var table = document.getElementById("tabellaDispositivi");
-                var row = table.insertRow(1);
-                var cell1 = row.insertCell(0);
-                var cell2 = row.insertCell(1);
-                var cell3 = row.insertCell(2);
-                var cell4 = row.insertCell(3);
-                var cell5 = row.insertCell(4);
-                var cell6 = row.insertCell(5);
-
-                //creazione della checkbox indoor 
-                var checkbox = document.createElement('input');
-                checkbox.type = "checkbox";
-                checkbox.id = "check" + buttonCounter;
-                //checkbox.id = "id"; 
-
-                //creazione input type number
-                var x = document.createElement("INPUT");
-                x.setAttribute("type", "number");
-                x.value = 60;
-                x.style.width = "50px";
-                x.id = "time" + buttonCounter;
-
-                //creazione pulsante avvio scansione
-                var button = document.createElement("INPUT");
-                button.setAttribute("type", "submit");
-                button.value = "inizia scansione";
-                button.id = "scan" + buttonCounter;
-                button.onclick = function () { scan(lat, lng) };
-                buttonCounter++;
-
-
-                cell2.innerHTML = lat;
-                cell3.innerHTML = lng;
-                cell4.appendChild(checkbox);
-                cell5.appendChild(x);
-                cell6.appendChild(button);
-
-                if (nome.trim() == "") {
-                    cell1.innerHTML = "Dispositivo";
-                }
-                else {
-                    cell1.innerHTML = nome;
-                }
+                createRow(lat, lng, nome);
             }
-        } else {
+        } else if (wsMsg.split('-')[0] == "$db") {
+            var lat = wsMsg.split('-')[3];
+            var lng = wsMsg.split('-')[4];
+            var nome = wsMsg.split('-')[2];
+            createRow(lat, lng, nome);
+            console.log(wsMsg);
+        }
+        else {
             if (wsMsg.split(':')[0] == "$200") {
                 console.log(wsMsg.substring(1));
             }
@@ -84,6 +54,7 @@ function connect() {
             }
 
         }
+
     };
 }
 //---------------------------------------------------------------------
@@ -164,14 +135,10 @@ function addDevice() {
         if (lat != null && lng != null) {
             if (lat != "" && lng != "") {
                 if (nome.trim() == "") {
-                    var mark = createCustomMarker("Dispositivo", lat, lng).addTo(cMarkers);
-                    cMarkers.addTo(map);
                     socket.send("$insert-INSERT INTO Dispositivi(nome, latitudine, longitudine) VALUES(?,?,?)-"
                         + lat + "-" + lng + "-Dispositivo");
                 }
                 else {
-                    var mark = createCustomMarker(nome, lat, lng).addTo(cMarkers);
-                    cMarkers.addTo(map);;
                     socket.send("$insert-INSERT INTO Dispositivi(nome, latitudine, longitudine) VALUES(?,?,?)-"
                         + lat + "-" + lng + "-" + nome);
                 }
@@ -220,7 +187,7 @@ function createCustomMarker(nome, lat, lng) {
 //---------------------------------------------------------------------
 function scan(lat, lng) {
     if (socket.readyState == 1) {
-        if (lat != null && lng != null){
+        if (lat != null && lng != null) {
             //da aggiungere l'inserimento del tempo
             socket.send("$scan-SELECT id FROM Dispositivi WHERE latitudine = " + lat + " AND longitudine = " + lng);
         }
@@ -228,3 +195,52 @@ function scan(lat, lng) {
 
 }
 //---------------------------------------------------------------------
+
+async function createRow(lat, lng, nome) {
+    //creazione delle righe per nome
+    var table = document.getElementById("tabellaDispositivi");
+    var row = table.insertRow(1);
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var cell3 = row.insertCell(2);
+    var cell4 = row.insertCell(3);
+    var cell5 = row.insertCell(4);
+    var cell6 = row.insertCell(5);
+
+    //creazione della checkbox indoor 
+    var checkbox = document.createElement('input');
+    checkbox.type = "checkbox";
+    checkbox.id = "check" + buttonCounter;
+    //checkbox.id = "id"; 
+
+    //creazione input type number
+    var x = document.createElement("INPUT");
+    x.setAttribute("type", "number");
+    x.value = 60;
+    x.style.width = "50px";
+    x.id = "time" + buttonCounter;
+
+    //creazione pulsante avvio scansione
+    var button = document.createElement("INPUT");
+    button.setAttribute("type", "submit");
+    button.value = "inizia scansione";
+    button.id = "scan" + buttonCounter;
+    button.onclick = function () { scan(lat, lng) };
+
+
+
+    cell2.innerHTML = lat;
+    cell3.innerHTML = lng;
+    cell4.appendChild(checkbox);
+    cell5.appendChild(x);
+    cell6.appendChild(button);
+    if (nome.trim() == "") {
+        nome = "Dispositivo " + buttonCounter;
+    }
+
+    cell1.innerHTML = "Dispositivo " + buttonCounter;
+    var mark = createCustomMarker(nome, lat, lng).addTo(cMarkers);
+    cMarkers.addTo(map);
+    buttonCounter++;
+
+}
