@@ -10,8 +10,9 @@ from colorama import Fore, Style
 from datetime import datetime
 from mac_vendor_lookup import MacLookup
 
-
+listaDati = []
 indexDevice = 0
+ID = 1
 
 #query per la media
 #SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress
@@ -20,6 +21,13 @@ indexDevice = 0
 #nel mio ambiente casalingo il coefficiente di dispersione del segnale
 #e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 37
 pathLossC = 3.08
+class DatiTrilaterazione:
+    def __init__(self, macAdr, dist, vendor, lat, lng):
+        self.macAdr = macAdr
+        self.dist = dist
+        self.vendor = vendor
+        self.lat = lat
+        self.lng = lng
 
 # creazione classe per i vendor e rispettivo RSSI d0
 #########################################################
@@ -33,7 +41,7 @@ class VendorRSSId0:
         return vendor
 
 Apple = ("Apple, Inc.",-33)
-Samsung = ("Samsung Electronics Co.,Ltd",-29)
+Samsung = ("Samsung Electronics Co.,Ltd",-30)
 
 Vendor = [Apple,Samsung]
 #########################################################
@@ -41,7 +49,7 @@ Vendor = [Apple,Samsung]
 # calcolo della distanza 
 #########################################################
 def distance(vendor, RSSI):
-    RSSId0 = -32
+    RSSId0 = -31.5
     for x in Vendor:
         if(vendor == x[0]):
             RSSId0 = x[1]
@@ -181,7 +189,7 @@ def PacketHandler(pkt):
         RSSI = pkt.dBm_AntSignal
         time = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
         
-        nodeID = indexDevice[0][0]
+        nodeID = ID
         vendor = findVendor(macAdr)
         dst = distance(vendor, RSSI)
 
@@ -195,7 +203,7 @@ def PacketHandler(pkt):
 #########################################################
 async def echo(websocket, path):
     async for message in websocket:
-         #rint(f"[From client]: {message}")
+        #print(f"[From client]: {message}")
         protocol = message.split("-")[0]
 
         # inserimento dati nel database
@@ -228,18 +236,14 @@ async def echo(websocket, path):
 
         # inizio scansione e inserimento dei dati nel database
         #########################################################
-        if protocol == "$scan":     
-            timer = 60
-            query = message.split("-")[1]
+        if protocol == "$scan":  
+            global listaDati
+            global ID   
+            timer = 120
+            ID = message.split("-")[1]
             data = None
-            if(executeQuery(query, data)):
-                await websocket.send("$200:OK")
-            else:
-                await websocket.send("$400:Bad Request")
             msg = "[CLIENT][{}]:Scan del dispositivo: {} per {} secondi"
-            print(msg.format(tempo(),str(indexDevice[0][0]),timer))
-            
-           
+            print(msg.format(tempo(),str(ID),timer))      
 
             t = AsyncSniffer(iface = interface, prn = PacketHandler)
             t.start()
@@ -247,6 +251,30 @@ async def echo(websocket, path):
             t.stop() 
 
             print("[SERVER][" + tempo() + "]: scansione terminata")
+
+            query = "select macadress FROM(SELECT * FROM ProbeRequest GROUP by macadress, nodeid) GROUP by macadress HAVING COUNT(macadress) >= 3"
+            data = None
+            if(executeQuery(query, data)):
+                for x in indexDevice:
+                    for y in x: 
+                         query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '"+ y + "' group by nodeid order by distance"
+                         if(executeQuery(query, data)):
+                             for z in indexDevice:
+                                listaDati.append([z[5], z[4], z[2]*(10**-5)]) 
+                                vendor = z[3]  
+                                macAdr = z[0]
+                                #print(z[5], z[4], z[2])                       
+                             coords = (trilateration(listaDati[0][0], listaDati[0][1], listaDati[0][2],
+                             listaDati[1][0], listaDati[1][1], listaDati[1][2],
+                             listaDati[2][0], listaDati[2][1], listaDati[2][2]))
+                             listaDati.clear()
+                             if(vendor == None):
+                                vendor = "Vendor non riconosciuto"
+                             print(coords[0], coords[1], macAdr, vendor)
+                             await websocket.send("$pos-"+str(coords[0])+"-"+str(coords[1])+"-"+macAdr+"-"+vendor)
+            else:
+                pass
+
 
 
             #tempo = int(attributes)
@@ -257,7 +285,6 @@ async def echo(websocket, path):
         #########################################################
         if protocol == "$db":
             query = message.split("-")[1]
-            print(query)
             data = None
             print("[CLIENT][" + tempo() + "]: SELECT * FROM Dispositivi")
             if(executeQuery(query, data)):

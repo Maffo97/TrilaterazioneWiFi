@@ -1,9 +1,12 @@
+
+
 //variabile socket e layergroup
 //---------------------------------------------------------------------
 var socket = null;
 var markers = L.layerGroup();
 var cMarkers = L.layerGroup();
-var buttonCounter = 0;
+var clusterMarkers = L.markerClusterGroup();
+var buttonCounter = 1;
 //---------------------------------------------------------------------
 
 
@@ -43,8 +46,16 @@ async function connect() {
             var nome = wsMsg.split('-')[2];
             createRow(lat, lng, nome);
             console.log(wsMsg);
-        }
-        else {
+
+        } else if(wsMsg.split('-')[0] == "$pos"){
+            var lng = wsMsg.split('-')[1];
+            var lat = wsMsg.split('-')[2];
+            var macAdr = wsMsg.split('-')[3];
+            var vendor = wsMsg.split('-')[4];
+            var mark = createCustomMarker(macAdr, lat, lng).addTo(clusterMarkers);
+            clusterMarkers.addTo(map);
+        }       
+        else{
             if (wsMsg.split(':')[0] == "$200") {
                 console.log(wsMsg.substring(1));
             }
@@ -185,12 +196,12 @@ function createCustomMarker(nome, lat, lng) {
 
 //funzione che da inizio alla scansione dei pacchetti circostanti
 //---------------------------------------------------------------------
-function scan(lat, lng) {
+function WiFi(id) {
     if (socket.readyState == 1) {
-        if (lat != null && lng != null) {
-            //da aggiungere l'inserimento del tempo
-            socket.send("$scan-SELECT id FROM Dispositivi WHERE latitudine = " + lat + " AND longitudine = " + lng);
-        }
+        print(id)
+        realID = id.split('-')[1]
+        print(realID)
+        socket.send("$scan-" + realID);
     }
 
 }
@@ -210,22 +221,22 @@ async function createRow(lat, lng, nome) {
     //creazione della checkbox indoor 
     var checkbox = document.createElement('input');
     checkbox.type = "checkbox";
-    checkbox.id = "check" + buttonCounter;
-    //checkbox.id = "id"; 
+    checkbox.id = "check-" + buttonCounter;
 
     //creazione input type number
     var x = document.createElement("INPUT");
     x.setAttribute("type", "number");
     x.value = 60;
     x.style.width = "50px";
-    x.id = "time" + buttonCounter;
+    x.id = "time-" + buttonCounter;
 
     //creazione pulsante avvio scansione
     var button = document.createElement("INPUT");
     button.setAttribute("type", "submit");
     button.value = "inizia scansione";
-    button.id = "scan" + buttonCounter;
-    button.onclick = function () { scan(lat, lng) };
+    button.id = "btn-" + buttonCounter;
+    button.onclick = function () { WiFi(button.id) };
+
 
 
 
