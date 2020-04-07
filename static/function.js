@@ -4,9 +4,18 @@
 //---------------------------------------------------------------------
 var socket = null;
 var markers = L.layerGroup();
-var cMarkers = L.layerGroup();
-var clusterMarkers = L.markerClusterGroup();
+var antennaMarkers = L.layerGroup();
+var phoneMarkers = L.layerGroup();
+var gifMarker = L.layerGroup();
 var buttonCounter = 1;
+var homeUrl = "static/home.png";
+var antennaUrl = "static/antenna.png";
+var phoneUrl = "static/phone.png";
+var pulseUrl = "static/pulse.gif"
+var antennaDim = [30, 23]
+var homeDim = [45, 50]
+var phoneDim = [20, 20]
+var pulseDim = [70, 70]
 //---------------------------------------------------------------------
 
 
@@ -14,6 +23,7 @@ var buttonCounter = 1;
 //con i vari metodi on open e on message.
 //---------------------------------------------------------------------
 async function connect() {
+
     var btn = document.getElementById("btn");
     var elimina = document.getElementById("elimina");
     var find = document.getElementById("findCoordinate");
@@ -28,7 +38,7 @@ async function connect() {
     socket.onopen = function (event) {
         socket.send("$db-SELECT * FROM Dispositivi");
         console.log("Connessione col server effettuata");
-    };
+    }
     socket.onmessage = function (messageEvent) {
         var wsMsg = messageEvent.data;
         if (wsMsg.split(':')[0] == "$insert") {
@@ -47,21 +57,26 @@ async function connect() {
             createRow(lat, lng, nome);
             console.log(wsMsg);
 
-        } else if(wsMsg.split('-')[0] == "$pos"){
+        } else if (wsMsg.split('-')[0] == "$pos") {
             var lng = wsMsg.split('-')[1];
             var lat = wsMsg.split('-')[2];
             var macAdr = wsMsg.split('-')[3];
             var vendor = wsMsg.split('-')[4];
-            var mark = createCustomMarker(macAdr, lat, lng).addTo(clusterMarkers);
+            var text = macAdr + "\n" + vendor;
+            clusterMarkers.addLayer(createCustomMarker(text, lat, lng, phoneUrl, false, phoneDim, false));
             clusterMarkers.addTo(map);
-        }       
-        else{
+
+        } else if (wsMsg == "$end") {
+            gifMarker.clearLayers();
+            alert("Scansione terminata");
+        }
+        else {
             if (wsMsg.split(':')[0] == "$200") {
                 console.log(wsMsg.substring(1));
             }
             else {
                 alert(wsMsg.substring(1));
-                console.log(wsMsg.substring(1));
+                //console.log(wsMsg.substring(1));
             }
 
         }
@@ -94,28 +109,10 @@ function showPosition(position) {
     lng.value = longitude;
     map.setView([position.coords.latitude, position.coords.longitude], 19);
     markers.clearLayers();
-    markers = L.layerGroup([createMarker(latitude, longitude)]).addTo(map);
-}
-//---------------------------------------------------------------------
-
-//crea un marker da aggiungere alla mappa 
-//---------------------------------------------------------------------
-function createMarker(latitude, longitude) {
-    var marker = new L.Marker([latitude, longitude], { draggable: true });
-    marker.bindPopup('<p>Trascina per correggere \n la posizione</p>');
-    marker.on('mouseover', function (e) {
-        this.openPopup();
-    });
-    marker.on('mouseout', function (e) {
-        this.closePopup();
-    });
-    marker.on("drag", function (e) {
-        var marker = e.target;
-        var position = marker.getLatLng();
-        lat.value = position.lat;
-        lng.value = position.lng;
-    });
-    return marker;
+    text = "Trascina per correggere \n la posizione"
+    markers = L.layerGroup([createCustomMarker(text, latitude, longitude, homeUrl, true, homeDim, false)]).addTo(map);
+    //clusterMarkers.addLayer(createCustomMarker("ciao",45.3107, 10.7784));
+    //clusterMarkers.addTo(map);
 }
 //---------------------------------------------------------------------
 
@@ -126,11 +123,12 @@ function removeDevice() {
         if (confirm("Sei sicuro di rimuovere definitivamente tutti i dispositivi all'interno del database?")) {
             socket.send("$delete-DELETE FROM Dispositivi");
             var table = document.getElementById("tabellaDispositivi");
-            cMarkers.clearLayers();
-            console.log(table.rows.length);
+            antennaMarkers.clearLayers();
+            //console.log(table.rows.length);
             while (table.rows.length != 1) {
                 table.deleteRow(table.rows.length - 1)
             }
+            buttonCounter = 1;
         }
     }
 }
@@ -177,31 +175,52 @@ function addDevice() {
 //crea un marker tramite l'utilizzo di una immagine png per segnalare le posizioni
 //dei dispositivi
 //---------------------------------------------------------------------
-function createCustomMarker(nome, lat, lng) {
-    var redMarker = L.icon({
-        iconUrl: 'static/redMarker.png',
-        iconSize: [10, 10], // size of the icon
-    });
-    var marker = new L.Marker([lat, lng], { icon: redMarker, draggable: false });
-    marker.bindPopup(nome);
-    marker.on('mouseover', function (e) {
-        this.openPopup();
-    });
-    marker.on('mouseout', function (e) {
-        this.closePopup();
-    });
+function createCustomMarker(text, latitudine, longitudine, iconUrl, drag, dim, pulse) {
+    if (!pulse) {
+        var cMark = L.icon({
+            iconUrl: iconUrl,
+            iconSize: dim, // size of the icon
+            iconAnchor: [dim[0] / 2, dim[1]]
+        });
+    }
+    else {
+        var cMark = L.icon({
+            iconUrl: iconUrl,
+            iconSize: dim, // size of the icon
+            iconAnchor: [dim[0] / 2, dim[1] - 12]
+        });
+    }
+    var marker = new L.Marker([latitudine, longitudine], { icon: cMark, draggable: drag });
+    if (!pulse) {
+        marker.bindPopup(text);
+        marker.on('click', function (e) {
+            this.openPopup();
+        });
+        marker.on('mouseout', function (e) {
+            this.closePopup();
+        });
+        marker.on("drag", function (e) {
+            var marker = e.target;
+            var position = marker.getLatLng();
+            lat.value = position.lat;
+            lng.value = position.lng;
+        });
+    }
     return marker;
 }
 //---------------------------------------------------------------------
 
 //funzione che da inizio alla scansione dei pacchetti circostanti
 //---------------------------------------------------------------------
-function WiFi(id) {
+function WiFi(id, lat, lng) {
     if (socket.readyState == 1) {
+        gifMarker.clearLayers();
         print(id)
         realID = id.split('-')[1]
         print(realID)
         socket.send("$scan-" + realID);
+        var mark = createCustomMarker("", lat, lng, pulseUrl, false, pulseDim, true).addTo(gifMarker);
+        gifMarker.addTo(map);
     }
 
 }
@@ -235,7 +254,7 @@ async function createRow(lat, lng, nome) {
     button.setAttribute("type", "submit");
     button.value = "inizia scansione";
     button.id = "btn-" + buttonCounter;
-    button.onclick = function () { WiFi(button.id) };
+    button.onclick = function () { WiFi(button.id, cell2.innerHTML, cell3.innerHTML) };
 
 
 
@@ -250,8 +269,8 @@ async function createRow(lat, lng, nome) {
     }
 
     cell1.innerHTML = "Dispositivo " + buttonCounter;
-    var mark = createCustomMarker(nome, lat, lng).addTo(cMarkers);
-    cMarkers.addTo(map);
+    var mark = createCustomMarker(nome, lat, lng, antennaUrl, false, antennaDim, false).addTo(antennaMarkers);
+    antennaMarkers.addTo(map);
     buttonCounter++;
 
 }

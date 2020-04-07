@@ -239,10 +239,10 @@ async def echo(websocket, path):
         if protocol == "$scan":  
             global listaDati
             global ID   
-            timer = 120
+            timer = 10
             ID = message.split("-")[1]
             data = None
-            msg = "[CLIENT][{}]:Scan del dispositivo: {} per {} secondi"
+            msg = "[CLIENT][{}]: Scan del dispositivo: {} per {} secondi"
             print(msg.format(tempo(),str(ID),timer))      
 
             t = AsyncSniffer(iface = interface, prn = PacketHandler)
@@ -251,6 +251,7 @@ async def echo(websocket, path):
             t.stop() 
 
             print("[SERVER][" + tempo() + "]: scansione terminata")
+            await websocket.send("$end")
 
             query = "select macadress FROM(SELECT * FROM ProbeRequest GROUP by macadress, nodeid) GROUP by macadress HAVING COUNT(macadress) >= 3"
             data = None
@@ -260,7 +261,7 @@ async def echo(websocket, path):
                          query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '"+ y + "' group by nodeid order by distance"
                          if(executeQuery(query, data)):
                              for z in indexDevice:
-                                listaDati.append([z[5], z[4], z[2]*(10**-5)]) 
+                                listaDati.append([z[5], z[4], z[2]/96287.5]) 
                                 vendor = z[3]  
                                 macAdr = z[0]
                                 #print(z[5], z[4], z[2])                       
@@ -273,6 +274,7 @@ async def echo(websocket, path):
                              print(coords[0], coords[1], macAdr, vendor)
                              await websocket.send("$pos-"+str(coords[0])+"-"+str(coords[1])+"-"+macAdr+"-"+vendor)
             else:
+
                 pass
 
 
