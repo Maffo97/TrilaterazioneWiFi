@@ -41,7 +41,7 @@ class VendorRSSId0:
         return vendor
 
 Apple = ("Apple, Inc.",-33)
-Samsung = ("Samsung Electronics Co.,Ltd",-30)
+Samsung = ("Samsung Electronics Co.,Ltd",-28)
 
 Vendor = [Apple,Samsung]
 #########################################################
@@ -49,7 +49,7 @@ Vendor = [Apple,Samsung]
 # calcolo della distanza 
 #########################################################
 def distance(vendor, RSSI):
-    RSSId0 = -31.5
+    RSSId0 = -30.5
     for x in Vendor:
         if(vendor == x[0]):
             RSSId0 = x[1]
@@ -239,7 +239,7 @@ async def echo(websocket, path):
         if protocol == "$scan":  
             global listaDati
             global ID   
-            timer = 10
+            timer = 60
             ID = message.split("-")[1]
             data = None
             msg = "[CLIENT][{}]: Scan del dispositivo: {} per {} secondi"
@@ -261,7 +261,7 @@ async def echo(websocket, path):
                          query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '"+ y + "' group by nodeid order by distance"
                          if(executeQuery(query, data)):
                              for z in indexDevice:
-                                listaDati.append([z[5], z[4], z[2]/96287.5]) 
+                                listaDati.append([z[5], z[4], z[2]*(10**-5)]) 
                                 vendor = z[3]  
                                 macAdr = z[0]
                                 #print(z[5], z[4], z[2])                       

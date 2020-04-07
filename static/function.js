@@ -58,13 +58,14 @@ async function connect() {
             console.log(wsMsg);
 
         } else if (wsMsg.split('-')[0] == "$pos") {
+            
             var lng = wsMsg.split('-')[1];
             var lat = wsMsg.split('-')[2];
             var macAdr = wsMsg.split('-')[3];
             var vendor = wsMsg.split('-')[4];
             var text = macAdr + "\n" + vendor;
-            clusterMarkers.addLayer(createCustomMarker(text, lat, lng, phoneUrl, false, phoneDim, false));
-            clusterMarkers.addTo(map);
+            phoneMarkers.addLayer(createCustomMarker(text, lat, lng, phoneUrl, false, phoneDim, false));
+            phoneMarkers.addTo(map);
 
         } else if (wsMsg == "$end") {
             gifMarker.clearLayers();
@@ -221,6 +222,7 @@ function WiFi(id, lat, lng) {
         socket.send("$scan-" + realID);
         var mark = createCustomMarker("", lat, lng, pulseUrl, false, pulseDim, true).addTo(gifMarker);
         gifMarker.addTo(map);
+        phoneMarkers.clearLayers();
     }
 
 }
