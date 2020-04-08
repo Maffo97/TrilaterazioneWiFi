@@ -239,8 +239,8 @@ async def echo(websocket, path):
         if protocol == "$scan":  
             global listaDati
             global ID   
-            timer = 60
             ID = message.split("-")[1]
+            timer = int(message.split("-")[2])
             data = None
             msg = "[CLIENT][{}]: Scan del dispositivo: {} per {} secondi"
             print(msg.format(tempo(),str(ID),timer))      

@@ -66,6 +66,7 @@ async function connect() {
             var text = macAdr + "\n" + vendor;
             phoneMarkers.addLayer(createCustomMarker(text, lat, lng, phoneUrl, false, phoneDim, false));
             phoneMarkers.addTo(map);
+            createRow1();
 
         } else if (wsMsg == "$end") {
             gifMarker.clearLayers();
@@ -82,7 +83,7 @@ async function connect() {
 
         }
 
-    };
+    }
 }
 //---------------------------------------------------------------------
 
@@ -146,7 +147,7 @@ function addDevice() {
             if (lat != "" && lng != "") {
                 if (nome.trim() == "") {
                     socket.send("$insert-INSERT INTO Dispositivi(nome, latitudine, longitudine) VALUES(?,?,?)-"
-                        + lat + "-" + lng + "-Dispositivo");
+                        + lat + "-" + lng + "-Dispositivo " + buttonCounter);
                 }
                 else {
                     socket.send("$insert-INSERT INTO Dispositivi(nome, latitudine, longitudine) VALUES(?,?,?)-"
@@ -213,16 +214,16 @@ function createCustomMarker(text, latitudine, longitudine, iconUrl, drag, dim, p
 
 //funzione che da inizio alla scansione dei pacchetti circostanti
 //---------------------------------------------------------------------
-function WiFi(id, lat, lng) {
+function WiFi(id, lat, lng,time) {
     if (socket.readyState == 1) {
+        startTimer(time);
         gifMarker.clearLayers();
-        print(id)
-        realID = id.split('-')[1]
-        print(realID)
-        socket.send("$scan-" + realID);
+        realID = id.split('-')[1];
+        socket.send("$scan-" + realID + "-" + time);
         var mark = createCustomMarker("", lat, lng, pulseUrl, false, pulseDim, true).addTo(gifMarker);
         gifMarker.addTo(map);
         phoneMarkers.clearLayers();
+        
     }
 
 }
@@ -252,27 +253,39 @@ async function createRow(lat, lng, nome) {
     x.id = "time-" + buttonCounter;
 
     //creazione pulsante avvio scansione
-    var button = document.createElement("INPUT");
+    var button = document.createElement("input");
     button.setAttribute("type", "submit");
+    button.setAttribute("class","btn btn-success");
     button.value = "inizia scansione";
     button.id = "btn-" + buttonCounter;
-    button.onclick = function () { WiFi(button.id, cell2.innerHTML, cell3.innerHTML) };
-
-
-
-
     cell2.innerHTML = lat;
     cell3.innerHTML = lng;
     cell4.appendChild(checkbox);
     cell5.appendChild(x);
     cell6.appendChild(button);
+
+    button.onclick = function () {WiFi(button.id, cell2.innerHTML, cell3.innerHTML, x.value)};
     if (nome.trim() == "") {
         nome = "Dispositivo " + buttonCounter;
     }
 
-    cell1.innerHTML = "Dispositivo " + buttonCounter;
+    cell1.innerHTML = nome;
     var mark = createCustomMarker(nome, lat, lng, antennaUrl, false, antennaDim, false).addTo(antennaMarkers);
     antennaMarkers.addTo(map);
     buttonCounter++;
 
+}
+
+function startTimer(timeleft) {
+    //document.getElementById("progressBar").setAttribute("max", timeleft);
+    //max = parseInt(document.getElementById("progressBar").getAttribute("max")) + 1;
+    console.log(timeleft);
+    var downloadTimer = setInterval(function () {
+        console.log(max);
+        document.getElementById("progressBar").style.width = 0 + timeleft;
+        timeleft -= 1;
+        if (timeleft <= 0) {
+            clearInterval(downloadTimer);
+        }
+    }, 1000);
 }

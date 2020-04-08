@@ -3,6 +3,12 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+
     <link rel="stylesheet" href="https://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://leaflet.github.io/Leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" type="text/css" href="static/style.css">
@@ -33,32 +39,58 @@
 
     <div class="container">
         <div id="form">
-            <div>
-                <label for="nome">Nome</label>
-                <input type="text" id="nome" placeholder="Inserire il Nome" required>
+            <div class="input-group input-group-sm mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="inputGroup-sizing-sm" style="width:90px; text-align:center;">Nome</span>
+                </div>
+                <input id="nome" type="text" class="form-control" aria-label="Small" aria-describedby="inputGroup-sizing-sm">
             </div>
-            <div>
-                <label for="lat">Latitudine</label>
-                <input type="text" id="lat" placeholder="Inserire la latitudine" required>
+            <div class="input-group input-group-sm mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="inputGroup-sizing-sm" style="width:90px; text-align:center;">Latitudine</span>
+                </div>
+                <input id="lat" type="text" class="form-control" aria-label="Small" aria-describedby="inputGroup-sizing-sm">
             </div>
-            <div>
-                <label for="lng">Longitudine</label>
-                <input type="text" id="lng" placeholder="Inserire la longitudine" required>
+            <div class="input-group input-group-sm mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="inputGroup-sizing-sm" style="width:90px; text-align:center;">Longitudine</span>
+                </div>
+                <input id="lng" type="text" class="form-control" aria-label="Small" aria-describedby="inputGroup-sizing-sm">
             </div>
         </div>
 
-
-
-        <input type="submit" value="Aggiungi il dispositivo" id="btn" onclick="addDevice()" disabled>
-        <input type="submit" value="elimina Dispositivi" id="elimina" onclick="removeDevice()" disabled>
+        <input type="submit" value="Aggiungi dispositivo" class="btn btn-success" id="btn" onclick="addDevice()"
+            disabled>
+        <input type="submit" value="Elimina dispositivi" class="btn btn-danger" id="elimina" onclick="removeDevice()"
+            disabled>
     </div>
-
-
 
     <div class="title">
-        <h3>Trilaterazione WiFi tramite l'utilizzo di raspberry PI</h3>
+        <p style="font-size:2vw" class="font-weight-normal">Trilaterazione WiFi tramite l'utilizzo di raspberry PI</p>
     </div>
 
+    <div class="coordinate">
+        <p style="font-size:1.2vw">Se non conosci le coordinate precise, premi il pulsante qui sotto perchè vengano
+            generate
+        </p>
+        <div>
+            <input type="submit" class="btn btn-success" value="Trova la posizione" id="findCoordinate"
+                onclick="getLocation()" disabled>
+        </div>
+    </div>
+
+    <div class="trilaterazione">
+        <table id="dispositiviTrilaterati" class="table">
+            <thead class="thead-dark">
+              <tr>
+                <th scope="col">MacAdr</th>
+                <th scope="col">Vendor</th>
+                <th scope="col">Lat</th>
+                <th scope="col">Lng</th>
+              </tr>
+            </thead>
+        </table>      
+    </div>
 
 
     <div id="map"></div>
@@ -73,13 +105,7 @@
         }).addTo(map);
     </script>
 
-    <div class="coordinate">
-        <p>Se non conosci le coordinate precise, premi il pulsante qui sotto perchè vengano generate
-        </p>
-        <div>
-            <input type="submit" value="Trova la posizione" id="findCoordinate" onclick="getLocation()" disabled>
-        </div>
-    </div>
+
     </div>
 </body>
 

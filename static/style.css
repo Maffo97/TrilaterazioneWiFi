@@ -1,97 +1,57 @@
+.btn{
+  cursor: pointer;
+  padding: 5px;
+  font-size: 15px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#btn{
+  right: 0%;
+}
+
+#elimina{
+  left: 0%;
+}
+
+
 
 body{
     background-color: lightslategray;  
 }
-
-input[type=text], select {
-    min-width: 150px;
-    padding: 12px 10px;
-    margin: 8px 0;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-  
-  input[type=submit] {
-    min-width: 100px;
-    background-color: #4CAF50;
-    color: white;
-    padding: 5px 5px;
-    margin: 8px 0;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-align: center;
-  }
-  
-  input[type=submit]:hover {
-    background-color: #45a049;
-  }
   
 .container {
     text-align: center;
     border-radius: 5px;
     background-color: #f2f2f2;
     padding: 5px;
-    top: 37%;
-    width: 385px;
-    margin: auto;
+    top: 22%;
+    width: 29%;
+    height: 30%;
     position: absolute;
 }
 #map { 
-     width: 950px;
-     height: 425px;
+     width: 70%;
+     height: 78%;
      position: absolute;
      left: 30%;
-     top: 30%;
+     top: 22%;
  }
 
- #form {
-   width: 200px;
-   float: left;
-
- }
-
- #btn{
-   width: 160px;
-   height: 40px;
-   float: right;
-   position: absolute;
-   top: 18px;
-   right: 20px;
- }
-
- #start{
-  width: 160px;
-  height: 40px;
-  float: right;
-  position: absolute;
-  top: 100px;
-  right: 20px;
-}
-
-#elimina{
-  width: 160px;
-  height: 40px;
-  float: right;
-  position: absolute;
-  top: 178px;
-  right: 20px;
-}
 
  .coordinate{
-   top: 79%;
+   top: 53%;
    background-color: #f2f2f2;
    border-radius: 5px;
    padding: 5px;
-   width: 385px;
+   width: 29%;
    margin: auto;
    position: absolute;
    text-align: center;
  }
 
  .dispositivi{
-   width: 950px;
-   height: 170px;
+   width: 70%;
+   height: 21%;
    position: absolute;
    left: 30%;
    text-align: center;
@@ -102,12 +62,23 @@ input[type=text], select {
 
  .title{
   background-color: #f2f2f2;
+  position: absolute;
   border-radius: 5px;
-  padding: 5px;
-  width: 385px;
-  height: 200px;
+  padding: 10px;
+  width: 29%;
+  height: 21%;
   text-align: center;
+ }
 
-
+ .trilaterazione{
+  background-color: #f2f2f2;
+  position: absolute;
+  border-radius: 5px;
+  padding: 10px;
+  width: 29%;
+  height: 29%;
+  top: 71%;
+  text-align: center;
+  overflow: auto;
  }
  
