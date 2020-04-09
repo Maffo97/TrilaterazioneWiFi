@@ -292,6 +292,8 @@ async function createRow(lat, lng, nome) {
 
 }
 
+//creazione della tabella per i dispositivi che sono stati trovati sulla mappa
+//dopo la trilaterazione
 function createRowTableTrilateration(macAdr, lat, lng, vendor){
     var table = document.getElementById("dispositiviTrilaterati");
     var row = table.insertRow(1);
@@ -316,6 +318,8 @@ function createRowTableTrilateration(macAdr, lat, lng, vendor){
     cell4.innerHTML = lng;
 }
 
+
+//funzione per la progressione della barra di caricamento durante la scansione
 async function ProgressBar(timer) {
     var div = 100 / timer;
     percent = 0;

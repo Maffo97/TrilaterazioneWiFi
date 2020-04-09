@@ -10,17 +10,35 @@ from colorama import Fore, Style
 from datetime import datetime
 from mac_vendor_lookup import MacLookup
 
+# variabili globali utilizzate durante l'esecuzione del programma
+#########################################################
 listaDati = []
 indexDevice = 0
 ID = 1
+#########################################################
 
-# query per la media
-# SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress
+# Inizializzazione socket
+#########################################################
+ipAddress = socket.gethostbyname(socket.gethostname())
+interface = "wlx00c0caa71dd5"
+port = 8888
+#########################################################
+
+# Debug
+###############################SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress##########################
+print(f"[From server]:IP Address: {str(ipAddress)}")
+print(f"[From server]:Interface: {str(interface)}")
+print(f"[From server]:Port: {str(port)}")
+#########################################################
 
 
 # nel mio ambiente casalingo il coefficiente di dispersione del segnale
 # e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 37
 pathLossC = 3.08
+
+# classe per i dati del risultato della query che cerca almeno 3 rilevazioni
+# di un singolo dispositivo
+#########################################################
 
 
 class DatiTrilaterazione:
@@ -32,6 +50,9 @@ class DatiTrilaterazione:
         self.lng = lng
 
 # creazione classe per i vendor e rispettivo RSSI d0
+#########################################################
+
+# classe per i vendor e il rispettivo RSSI a 1mt
 #########################################################
 
 
@@ -141,24 +162,8 @@ finally:
 #########################################################
 
 
-# Inizializzazione socket
-#########################################################
-ipAddress = socket.gethostbyname(socket.gethostname())
-interface = "wlx00c0caa71dd5"
-port = 8888
-#########################################################
-
-# Debug
-###############################SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress##########################
-print(f"[From server]:IP Address: {str(ipAddress)}")
-print(f"[From server]:Interface: {str(interface)}")
-print(f"[From server]:Port: {str(port)}")
-#########################################################
-
 # Medodo che permette il collegamento al db e l'esecuzione della query
 #########################################################
-
-
 def executeQuery(query, data):
     global indexDevice
     Flag = True
@@ -276,11 +281,13 @@ async def echo(websocket, path):
             if(executeQuery(query, data)):
                 for x in indexDevice:
                     for y in x:
-                        query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '"+y+"' group by nodeid order by distance"
+                        query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
+                            y+"' group by nodeid order by distance"
                         try:
                             if(executeQuery(query, data)):
                                 for z in indexDevice:
-                                    listaDati.append([z[5], z[4], z[2]*(10**-5)])
+                                    listaDati.append(
+                                        [z[5], z[4], z[2]*(10**-5)])
                                     vendor = z[3]
                                     macAdr = z[0]
                                     print(z[5], z[4], z[2])
@@ -288,22 +295,20 @@ async def echo(websocket, path):
                                 coords = (trilateration(listaDati[0][0], listaDati[0][1], listaDati[0][2],
                                                         listaDati[1][0], listaDati[1][1], listaDati[1][2],
                                                         listaDati[2][0], listaDati[2][1], listaDati[2][2]))
-                                listaDati.clear()
+                                # listaDati.clear()
                                 if(vendor == None):
                                     vendor = "Vendor non riconosciuto"
                                 print(coords[0], coords[1], macAdr, vendor)
                                 await websocket.send("$pos-"+str(coords[0])+"-"+str(coords[1])+"-"+macAdr+"-"+vendor)
                         except IndexError as e:
                             print(
-                                Fore.RED+"[SERVER][" + tempo() + "]: Nessun Riscontro trovato nella trilaterazione" + Fore.RESET)
+                                Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e )
                         except:
                             print(
                                 Fore.RED+"[SERVER][" + tempo() + "]: Errore sconosciuto" + Fore.RESET)
             else:
-                pass
-
-            #tempo = int(attributes)
-            # print(t)
+                print(
+                    Fore.RED+"[SERVER][" + tempo() + "]: Nessun Riscontro trovato nella trilaterazione" + Fore.RESET)
         #########################################################
 
         # invio dei dati presenti nel database
