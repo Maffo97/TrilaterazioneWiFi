@@ -2,6 +2,8 @@
 
 //variabile socket e layergroup
 //---------------------------------------------------------------------
+var bigAntenna = L.layerGroup();
+var bigPhone = L.layerGroup();
 var socket = null;
 var markers = L.layerGroup();
 var antennaMarkers = L.layerGroup();
@@ -58,19 +60,18 @@ async function connect() {
             console.log(wsMsg);
 
         } else if (wsMsg.split('-')[0] == "$pos") {
-            
+
             var lng = wsMsg.split('-')[1];
             var lat = wsMsg.split('-')[2];
             var macAdr = wsMsg.split('-')[3];
             var vendor = wsMsg.split('-')[4];
-            var text = macAdr + "\n" + vendor;
+            var text = vendor;
+            createRowTableTrilateration(macAdr, lat,lng,vendor);
             phoneMarkers.addLayer(createCustomMarker(text, lat, lng, phoneUrl, false, phoneDim, false));
             phoneMarkers.addTo(map);
-            createRow1();
 
         } else if (wsMsg == "$end") {
             gifMarker.clearLayers();
-            alert("Scansione terminata");
         }
         else {
             if (wsMsg.split(':')[0] == "$200") {
@@ -149,7 +150,7 @@ function addDevice() {
                     socket.send("$insert-INSERT INTO Dispositivi(nome, latitudine, longitudine) VALUES(?,?,?)-"
                         + lat + "-" + lng + "-Dispositivo " + buttonCounter);
                 }
-                else {
+                else {            var map = L.map('map').setView([mylat, mylong], myzoom);
                     socket.send("$insert-INSERT INTO Dispositivi(nome, latitudine, longitudine) VALUES(?,?,?)-"
                         + lat + "-" + lng + "-" + nome);
                 }
@@ -183,6 +184,7 @@ function createCustomMarker(text, latitudine, longitudine, iconUrl, drag, dim, p
             iconUrl: iconUrl,
             iconSize: dim, // size of the icon
             iconAnchor: [dim[0] / 2, dim[1]]
+            
         });
     }
     else {
@@ -190,6 +192,7 @@ function createCustomMarker(text, latitudine, longitudine, iconUrl, drag, dim, p
             iconUrl: iconUrl,
             iconSize: dim, // size of the icon
             iconAnchor: [dim[0] / 2, dim[1] - 12]
+             
         });
     }
     var marker = new L.Marker([latitudine, longitudine], { icon: cMark, draggable: drag });
@@ -214,16 +217,16 @@ function createCustomMarker(text, latitudine, longitudine, iconUrl, drag, dim, p
 
 //funzione che da inizio alla scansione dei pacchetti circostanti
 //---------------------------------------------------------------------
-function WiFi(id, lat, lng,time) {
+function WiFi(id, lat, lng, time) {
     if (socket.readyState == 1) {
-        startTimer(time);
+        ProgressBar(time);
         gifMarker.clearLayers();
         realID = id.split('-')[1];
         socket.send("$scan-" + realID + "-" + time);
         var mark = createCustomMarker("", lat, lng, pulseUrl, false, pulseDim, true).addTo(gifMarker);
         gifMarker.addTo(map);
         phoneMarkers.clearLayers();
-        
+
     }
 
 }
@@ -239,6 +242,9 @@ async function createRow(lat, lng, nome) {
     var cell4 = row.insertCell(3);
     var cell5 = row.insertCell(4);
     var cell6 = row.insertCell(5);
+    
+
+
 
     //creazione della checkbox indoor 
     var checkbox = document.createElement('input');
@@ -255,37 +261,74 @@ async function createRow(lat, lng, nome) {
     //creazione pulsante avvio scansione
     var button = document.createElement("input");
     button.setAttribute("type", "submit");
-    button.setAttribute("class","btn btn-success");
+    button.setAttribute("class", "btn btn-success");
     button.value = "inizia scansione";
     button.id = "btn-" + buttonCounter;
+    button.style.padding = "2px";
+    button.style.fontSize= "1.1vw";
     cell2.innerHTML = lat;
     cell3.innerHTML = lng;
     cell4.appendChild(checkbox);
     cell5.appendChild(x);
     cell6.appendChild(button);
 
-    button.onclick = function () {WiFi(button.id, cell2.innerHTML, cell3.innerHTML, x.value)};
+    button.onclick = function () { WiFi(button.id, cell2.innerHTML, cell3.innerHTML, x.value) };
     if (nome.trim() == "") {
         nome = "Dispositivo " + buttonCounter;
     }
 
     cell1.innerHTML = nome;
     var mark = createCustomMarker(nome, lat, lng, antennaUrl, false, antennaDim, false).addTo(antennaMarkers);
+    row.addEventListener('mouseover', function (e) {
+        mark.bindTooltip(nome)
+        mark.openTooltip();
+    });
+    row.addEventListener('mouseout', function (e) {
+        bigAntenna.clearLayers();
+        mark.closeTooltip();
+    });
     antennaMarkers.addTo(map);
     buttonCounter++;
 
 }
 
-function startTimer(timeleft) {
-    //document.getElementById("progressBar").setAttribute("max", timeleft);
-    //max = parseInt(document.getElementById("progressBar").getAttribute("max")) + 1;
-    console.log(timeleft);
-    var downloadTimer = setInterval(function () {
-        console.log(max);
-        document.getElementById("progressBar").style.width = 0 + timeleft;
-        timeleft -= 1;
-        if (timeleft <= 0) {
-            clearInterval(downloadTimer);
+function createRowTableTrilateration(macAdr, lat, lng, vendor){
+    var table = document.getElementById("dispositiviTrilaterati");
+    var row = table.insertRow(1);
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var cell3 = row.insertCell(2);
+    var cell4 = row.insertCell(3);
+    row.addEventListener('mouseover', function (e) {
+        var mark = createCustomMarker("", lat, lng, phoneUrl, false, [50,60], false).addTo(bigPhone);
+        mark.bindTooltip("<strong>Indirizzo Mac:</strong> " + macAdr +" <br>" + "<strong>vendor:</strong> " + vendor)
+        bigPhone.addTo(map);
+        mark.openTooltip();
+        phoneMarkers.hide();
+    });
+    row.addEventListener('mouseout', function (e) {
+        bigPhone.clearLayers();
+        mark.closeTooltip();
+    });
+    cell1.innerHTML = macAdr;
+    cell2.innerHTML = vendor;
+    cell3.innerHTML = lat;
+    cell4.innerHTML = lng;
+}
+
+async function ProgressBar(timer) {
+    var div = 100 / timer;
+    percent = 0;
+
+    var counterBack = setInterval(function () {
+        percent+=div;
+        if (percent <= 100) {
+            document.getElementById("PBar").style.width = 0 + percent + "%";
+            document.getElementById("PBar").innerHTML = "Scansione in corso";
+        } else {
+            clearTimeout(counterBack);
+            document.getElementById("PBar").style.width = 0;
         }
+
     }, 1000);
 }

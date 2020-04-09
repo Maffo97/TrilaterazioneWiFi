@@ -14,13 +14,15 @@ listaDati = []
 indexDevice = 0
 ID = 1
 
-#query per la media
-#SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress
+# query per la media
+# SELECT macadress, AVG(rssi) media FROM ProbeRequest GROUP BY macadress
 
 
-#nel mio ambiente casalingo il coefficiente di dispersione del segnale
-#e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 37
+# nel mio ambiente casalingo il coefficiente di dispersione del segnale
+# e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 37
 pathLossC = 3.08
+
+
 class DatiTrilaterazione:
     def __init__(self, macAdr, dist, vendor, lat, lng):
         self.macAdr = macAdr
@@ -31,23 +33,30 @@ class DatiTrilaterazione:
 
 # creazione classe per i vendor e rispettivo RSSI d0
 #########################################################
+
+
 class VendorRSSId0:
     vendor = None
     RSSId0 = None
+
     def __init__(self, vendor, RSSId0):
         self.vendor = vendor
         self.RSSId0 = RSSId0
+
     def getVendor(self):
         return vendor
 
-Apple = ("Apple, Inc.",-33)
-Samsung = ("Samsung Electronics Co.,Ltd",-28)
 
-Vendor = [Apple,Samsung]
+Apple = ("Apple, Inc.", -33)
+Samsung = ("Samsung Electronics Co.,Ltd", -28)
+
+Vendor = [Apple, Samsung]
 #########################################################
 
-# calcolo della distanza 
+# calcolo della distanza
 #########################################################
+
+
 def distance(vendor, RSSI):
     RSSId0 = -30.5
     for x in Vendor:
@@ -56,10 +65,12 @@ def distance(vendor, RSSI):
             break
 
     #print(str(RSSI) + " " + vendor + " " + str(RSSId0) + " " + str(pathLossC))
-    return pow(10,((RSSId0 - RSSI)/(10*pathLossC)))
+    return pow(10, ((RSSId0 - RSSI)/(10*pathLossC)))
 
 # metodo per scoprire il vendor in base al mac adress
 #########################################################
+
+
 def findVendor(macAdress):
     mac = MacLookup()
     try:
@@ -68,18 +79,20 @@ def findVendor(macAdress):
         pass
 #########################################################
 
-#A function to apply trilateration formulas to return the (x,y) intersection point of three circles
+# A function to apply trilateration formulas to return the (x,y) intersection point of three circles
 #########################################################
-def trilateration(x1,y1,r1,x2,y2,r2,x3,y3,r3):
-  A = 2*x2 - 2*x1
-  B = 2*y2 - 2*y1
-  C = r1**2 - r2**2 - x1**2 + x2**2 - y1**2 + y2**2
-  D = 2*x3 - 2*x2
-  E = 2*y3 - 2*y2
-  F = r2**2 - r3**2 - x2**2 + x3**2 - y2**2 + y3**2
-  x = (C*E - F*B) / (E*A - B*D)
-  y = (C*D - A*F) / (B*D - A*E)
-  return x,y
+
+
+def trilateration(x1, y1, r1, x2, y2, r2, x3, y3, r3):
+    A = 2*x2 - 2*x1
+    B = 2*y2 - 2*y1
+    C = r1**2 - r2**2 - x1**2 + x2**2 - y1**2 + y2**2
+    D = 2*x3 - 2*x2
+    E = 2*y3 - 2*y2
+    F = r2**2 - r3**2 - x2**2 + x3**2 - y2**2 + y3**2
+    x = (C*E - F*B) / (E*A - B*D)
+    y = (C*D - A*F) / (B*D - A*E)
+    return x, y
 #########################################################
 
 
@@ -88,6 +101,7 @@ def trilateration(x1,y1,r1,x2,y2,r2,x3,y3,r3):
 def tempo():
     return str(datetime.now().strftime("%H:%M:%S"))
 #########################################################
+
 
 # Creazione del database
 #########################################################
@@ -143,6 +157,8 @@ print(f"[From server]:Port: {str(port)}")
 
 # Medodo che permette il collegamento al db e l'esecuzione della query
 #########################################################
+
+
 def executeQuery(query, data):
     global indexDevice
     Flag = True
@@ -180,22 +196,24 @@ def executeQuery(query, data):
             # print(#Fore.GREEN + "[SERVER][" + tempo() + "]:Connessione con sqlite terminata" + Fore.RESET)
 #########################################################
 
-#packet handler
+# packet handler
 #########################################################
+
+
 def PacketHandler(pkt):
     if pkt.haslayer(Dot11ProbeReq):
         dot11Layer = pkt.getlayer(Dot11)
         macAdr = str(dot11Layer.addr2)
         RSSI = pkt.dBm_AntSignal
         time = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
-        
+
         nodeID = ID
         vendor = findVendor(macAdr)
         dst = distance(vendor, RSSI)
 
         query = "INSERT INTO ProbeRequest(macAdress, nodeID, rssi, distance, vendor, ts) VALUES (?,?,?,?,?,?)"
         data = (macAdr, nodeID, RSSI, dst, vendor, time)
-        executeQuery(query, data)     
+        executeQuery(query, data)
 #########################################################
 
 
@@ -236,19 +254,19 @@ async def echo(websocket, path):
 
         # inizio scansione e inserimento dei dati nel database
         #########################################################
-        if protocol == "$scan":  
+        if protocol == "$scan":
             global listaDati
-            global ID   
+            global ID
             ID = message.split("-")[1]
             timer = int(message.split("-")[2])
             data = None
             msg = "[CLIENT][{}]: Scan del dispositivo: {} per {} secondi"
-            print(msg.format(tempo(),str(ID),timer))      
+            print(msg.format(tempo(), str(ID), timer))
 
-            t = AsyncSniffer(iface = interface, prn = PacketHandler)
+            t = AsyncSniffer(iface=interface, prn=PacketHandler)
             t.start()
             time.sleep(timer)
-            t.stop() 
+            t.stop()
 
             print("[SERVER][" + tempo() + "]: scansione terminata")
             await websocket.send("$end")
@@ -257,30 +275,35 @@ async def echo(websocket, path):
             data = None
             if(executeQuery(query, data)):
                 for x in indexDevice:
-                    for y in x: 
-                         query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '"+ y + "' group by nodeid order by distance"
-                         if(executeQuery(query, data)):
-                             for z in indexDevice:
-                                listaDati.append([z[5], z[4], z[2]*(10**-5)]) 
-                                vendor = z[3]  
-                                macAdr = z[0]
-                                #print(z[5], z[4], z[2])                       
-                             coords = (trilateration(listaDati[0][0], listaDati[0][1], listaDati[0][2],
-                             listaDati[1][0], listaDati[1][1], listaDati[1][2],
-                             listaDati[2][0], listaDati[2][1], listaDati[2][2]))
-                             listaDati.clear()
-                             if(vendor == None):
-                                vendor = "Vendor non riconosciuto"
-                             print(coords[0], coords[1], macAdr, vendor)
-                             await websocket.send("$pos-"+str(coords[0])+"-"+str(coords[1])+"-"+macAdr+"-"+vendor)
+                    for y in x:
+                        query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '"+y+"' group by nodeid order by distance"
+                        try:
+                            if(executeQuery(query, data)):
+                                for z in indexDevice:
+                                    listaDati.append([z[5], z[4], z[2]*(10**-5)])
+                                    vendor = z[3]
+                                    macAdr = z[0]
+                                    print(z[5], z[4], z[2])
+                                print(listaDati)
+                                coords = (trilateration(listaDati[0][0], listaDati[0][1], listaDati[0][2],
+                                                        listaDati[1][0], listaDati[1][1], listaDati[1][2],
+                                                        listaDati[2][0], listaDati[2][1], listaDati[2][2]))
+                                listaDati.clear()
+                                if(vendor == None):
+                                    vendor = "Vendor non riconosciuto"
+                                print(coords[0], coords[1], macAdr, vendor)
+                                await websocket.send("$pos-"+str(coords[0])+"-"+str(coords[1])+"-"+macAdr+"-"+vendor)
+                        except IndexError as e:
+                            print(
+                                Fore.RED+"[SERVER][" + tempo() + "]: Nessun Riscontro trovato nella trilaterazione" + Fore.RESET)
+                        except:
+                            print(
+                                Fore.RED+"[SERVER][" + tempo() + "]: Errore sconosciuto" + Fore.RESET)
             else:
-
                 pass
 
-
-
             #tempo = int(attributes)
-            # print(t)   
+            # print(t)
         #########################################################
 
         # invio dei dati presenti nel database
@@ -294,8 +317,8 @@ async def echo(websocket, path):
                 for x in indexDevice:
                     for y in x:
                         data = data + "-" + str(y)
-                    await websocket.send("$db"+ data)   
-                    data = ""                           
+                    await websocket.send("$db" + data)
+                    data = ""
             else:
                 await websocket.send("$400:BadRequest")
         #########################################################
