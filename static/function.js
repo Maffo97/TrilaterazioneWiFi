@@ -226,6 +226,10 @@ function WiFi(id, lat, lng, time) {
         var mark = createCustomMarker("", lat, lng, pulseUrl, false, pulseDim, true).addTo(gifMarker);
         gifMarker.addTo(map);
         phoneMarkers.clearLayers();
+        var table = document.getElementById("dispositiviTrilaterati");
+        while (table.rows.length != 1) {
+            table.deleteRow(table.rows.length - 1)
+        }
 
     }
 
@@ -242,10 +246,6 @@ async function createRow(lat, lng, nome) {
     var cell4 = row.insertCell(3);
     var cell5 = row.insertCell(4);
     var cell6 = row.insertCell(5);
-    
-
-
-
     //creazione della checkbox indoor 
     var checkbox = document.createElement('input');
     checkbox.type = "checkbox";
