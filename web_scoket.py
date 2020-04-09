@@ -302,7 +302,7 @@ async def echo(websocket, path):
                                 await websocket.send("$pos-"+str(coords[0])+"-"+str(coords[1])+"-"+macAdr+"-"+vendor)
                         except IndexError as e:
                             print(
-                                Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e )
+                                Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e)
                         except:
                             print(
                                 Fore.RED+"[SERVER][" + tempo() + "]: Errore sconosciuto" + Fore.RESET)
