@@ -11,6 +11,8 @@ from datetime import datetime
 from mac_vendor_lookup import MacLookup
 from scipy.optimize import minimize
 import numpy as np
+import localization as lx
+
 
 # variabili globali utilizzate durante l'esecuzione del programma
 #########################################################
@@ -308,26 +310,7 @@ async def echo(websocket, path):
             if(executeQuery(query, data)):
                 for x in indexDevice:
                     for y in x:
-                        query = "select macadress, nodeid, distance, vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
-                            y+"'"
-                        try:
-                            if(executeQuery(query, data)):
-                                for z in indexDevice:
-                                    vendor = z[3]
-                                    macAdr = z[0]
-                                    #print(z[5], z[4], z[2])
-                                    dst.append([float(z[2]*(10**-5))])
-                                    coorde.append([z[5], z[4]])
-                                if(vendor == None):
-                                    vendor = "Vendor non riconosciuto"
-                                gps_cords = gps_solve(dst, coorde)
-                                print(gps_cords)
-                                await websocket.send("$pos-"+str(gps_cords[0])+"-"+str(gps_cords[1])+"-"+macAdr+"-"+vendor)
-                        except IndexError as e:
-                            print(
-                                Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e)
-
-                        query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
+                        '''query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
                             y+"' group by nodeid order by distance"
                         try:
                             if(executeQuery(query, data)):
@@ -341,7 +324,7 @@ async def echo(websocket, path):
                                 coords = (trilateration(listaDati[0][0], listaDati[0][1], listaDati[0][2],
                                                         listaDati[1][0], listaDati[1][1], listaDati[1][2],
                                                         listaDati[2][0], listaDati[2][1], listaDati[2][2]))
-                                # listaDati.clear()
+                                listaDati.clear()
                                 if(vendor == None):
                                     vendor = "Vendor non riconosciuto"
                                 print(coords[0], coords[1], macAdr, vendor)
@@ -352,6 +335,36 @@ async def echo(websocket, path):
                         except:
                             print(
                                 Fore.RED+"[SERVER][" + tempo() + "]: Errore sconosciuto" + Fore.RESET)
+                        
+                        '''
+                        query = "select macadress, nodeid, distance, vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
+                            y+"'"
+                        try:
+                            if(executeQuery(query, data)):
+                                P =lx.Project(mode='2D',solver='LSE_GC')
+                                t,label = P.add_target()
+                                for z in indexDevice:
+                                    vendor = z[3]
+                                    macAdr = z[0]
+                                    try:
+                                        P.add_anchor(str(z[1]),(float(z[5]),float(z[4])))
+                                    except:
+                                        print("ancora gia esistente")
+                                    t.add_measure(str(z[1]),float(z[2]*(10**-5)))
+                                if(vendor == None):
+                                    vendor = "Vendor non riconosciuto"
+
+                                P.solve()
+                                p = t.loc
+
+                                print(p.x,p.y)
+                                await websocket.send("$pos-"+str(p.x)+"-"+str(p.y)+"-"+macAdr+"-"+vendor)
+                        except IndexError as e:
+                            print(
+                                Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e)
+                        '''except:
+                            print(
+                                Fore.RED+"[SERVER][" + tempo() + "]: Errore sconosciuto" + Fore.RESET)'''
             else:
                 print(
                     Fore.RED+"[SERVER][" + tempo() + "]: Nessun Riscontro trovato nella trilaterazione" + Fore.RESET)
