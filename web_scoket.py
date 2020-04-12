@@ -9,9 +9,14 @@ from scapy.layers.dot11 import Dot11
 from colorama import Fore, Style
 from datetime import datetime
 from mac_vendor_lookup import MacLookup
+from scipy.optimize import minimize
+import numpy as np
 
 # variabili globali utilizzate durante l'esecuzione del programma
 #########################################################
+coorde = []
+coords = []
+dst = []
 listaDati = []
 indexDevice = 0
 ID = 1
@@ -68,7 +73,7 @@ class VendorRSSId0:
         return vendor
 
 
-Apple = ("Apple, Inc.", -33)
+Apple = ("Apple, Inc.", -31)
 Samsung = ("Samsung Electronics Co.,Ltd", -28)
 
 Vendor = [Apple, Samsung]
@@ -115,6 +120,26 @@ def trilateration(x1, y1, r1, x2, y2, r2, x3, y3, r3):
     y = (C*D - A*F) / (B*D - A*E)
     return x, y
 #########################################################
+
+
+
+def gps_solve(distances_to_station, stations_coordinates):
+    stations = list(np.array(stations_coordinates))
+    def error(x, c, r):
+        return sum([(np.linalg.norm(x - c[i]) - r[i]) ** 2 for i in range(len(c))])
+    l = len(stations)
+    S = 0
+    W = []
+    for x in distances_to_station:
+        S+=x[0]
+	# compute weight vector for initial guess
+    for w in distances_to_station:
+        x = ((l - 1) * S) / (S - w[0])
+        W.append(x)    
+	# get initial guess of point location
+    x0 = sum([W[i] * stations[i] for i in range(l)])
+	# optimize distance from signal origin to border of spheres
+    return minimize(error, x0, args=(stations, distances_to_station), method='Nelder-Mead').x
 
 
 # metodo per sapere l'orario
@@ -260,6 +285,8 @@ async def echo(websocket, path):
         # inizio scansione e inserimento dei dati nel database
         #########################################################
         if protocol == "$scan":
+            global dst
+            global coords
             global listaDati
             global ID
             ID = message.split("-")[1]
@@ -281,6 +308,25 @@ async def echo(websocket, path):
             if(executeQuery(query, data)):
                 for x in indexDevice:
                     for y in x:
+                        query = "select macadress, nodeid, distance, vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
+                            y+"'"
+                        try:
+                            if(executeQuery(query, data)):
+                                for z in indexDevice:
+                                    vendor = z[3]
+                                    macAdr = z[0]
+                                    #print(z[5], z[4], z[2])
+                                    dst.append([float(z[2]*(10**-5))])
+                                    coorde.append([z[5], z[4]])
+                                if(vendor == None):
+                                    vendor = "Vendor non riconosciuto"
+                                gps_cords = gps_solve(dst, coorde)
+                                print(gps_cords)
+                                await websocket.send("$pos-"+str(gps_cords[0])+"-"+str(gps_cords[1])+"-"+macAdr+"-"+vendor)
+                        except IndexError as e:
+                            print(
+                                Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e)
+
                         query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
                             y+"' group by nodeid order by distance"
                         try:
@@ -290,8 +336,8 @@ async def echo(websocket, path):
                                         [z[5], z[4], z[2]*(10**-5)])
                                     vendor = z[3]
                                     macAdr = z[0]
-                                    print(z[5], z[4], z[2])
-                                print(listaDati)
+                                    #print(z[5], z[4], z[2])
+                                #print(listaDati)
                                 coords = (trilateration(listaDati[0][0], listaDati[0][1], listaDati[0][2],
                                                         listaDati[1][0], listaDati[1][1], listaDati[1][2],
                                                         listaDati[2][0], listaDati[2][1], listaDati[2][2]))
