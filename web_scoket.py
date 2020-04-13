@@ -40,7 +40,7 @@ print(f"[From server]:Port: {str(port)}")
 
 
 # nel mio ambiente casalingo il coefficiente di dispersione del segnale
-# e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 37
+# e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 30
 pathLossC = 3.08
 
 # classe per i dati del risultato della query che cerca almeno 3 rilevazioni
@@ -66,7 +66,6 @@ class DatiTrilaterazione:
 class VendorRSSId0:
     vendor = None
     RSSId0 = None
-
     def __init__(self, vendor, RSSId0):
         self.vendor = vendor
         self.RSSId0 = RSSId0
@@ -86,7 +85,7 @@ Vendor = [Apple, Samsung]
 
 
 def distance(vendor, RSSI):
-    RSSId0 = -30.5
+    RSSId0 = -30
     for x in Vendor:
         if(vendor == x[0]):
             RSSId0 = x[1]
@@ -107,10 +106,8 @@ def findVendor(macAdress):
         pass
 #########################################################
 
-# A function to apply trilateration formulas to return the (x,y) intersection point of three circles
+#Funzione di trilaterazoine semplice
 #########################################################
-
-
 def trilateration(x1, y1, r1, x2, y2, r2, x3, y3, r3):
     A = 2*x2 - 2*x1
     B = 2*y2 - 2*y1
@@ -282,7 +279,7 @@ async def echo(websocket, path):
                 await websocket.send("$200:OK")
             else:
                 await websocket.send("$400:Bad Request")
-        #########################################################
+        #####################################################localStorage.setItem('myCat', 'Tom');####
 
         # inizio scansione e inserimento dei dati nel database
         #########################################################
@@ -310,33 +307,6 @@ async def echo(websocket, path):
             if(executeQuery(query, data)):
                 for x in indexDevice:
                     for y in x:
-                        '''query = "select macadress, nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
-                            y+"' group by nodeid order by distance"
-                        try:
-                            if(executeQuery(query, data)):
-                                for z in indexDevice:
-                                    listaDati.append(
-                                        [z[5], z[4], z[2]*(10**-5)])
-                                    vendor = z[3]
-                                    macAdr = z[0]
-                                    #print(z[5], z[4], z[2])
-                                #print(listaDati)
-                                coords = (trilateration(listaDati[0][0], listaDati[0][1], listaDati[0][2],
-                                                        listaDati[1][0], listaDati[1][1], listaDati[1][2],
-                                                        listaDati[2][0], listaDati[2][1], listaDati[2][2]))
-                                listaDati.clear()
-                                if(vendor == None):
-                                    vendor = "Vendor non riconosciuto"
-                                print(coords[0], coords[1], macAdr, vendor)
-                                await websocket.send("$pos-"+str(coords[0])+"-"+str(coords[1])+"-"+macAdr+"-"+vendor)
-                        except IndexError as e:
-                            print(
-                                Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e)
-                        except:
-                            print(
-                                Fore.RED+"[SERVER][" + tempo() + "]: Errore sconosciuto" + Fore.RESET)
-                        
-                        '''
                         query = "select macadress, nodeid, distance, vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
                             y+"'"
                         try:
@@ -346,10 +316,7 @@ async def echo(websocket, path):
                                 for z in indexDevice:
                                     vendor = z[3]
                                     macAdr = z[0]
-                                    try:
-                                        P.add_anchor(str(z[1]),(float(z[5]),float(z[4])))
-                                    except:
-                                        print("ancora gia esistente")
+                                    P.add_anchor(str(z[1]),(float(z[5]),float(z[4])))
                                     t.add_measure(str(z[1]),float(z[2]*(10**-5)))
                                 if(vendor == None):
                                     vendor = "Vendor non riconosciuto"
@@ -385,6 +352,14 @@ async def echo(websocket, path):
                     data = ""
             else:
                 await websocket.send("$400:BadRequest")
+
+            query = "SELECT MAX(ts) FROM ProbeRequest"
+            data = None
+            if(executeQuery(query, data)):
+                await websocket.send("$ts-" + str(indexDevice[0][0]))
+            else:
+                await websocket.send("$400:BadRequest")
+
         #########################################################
 
 asyncio.get_event_loop().run_until_complete(
