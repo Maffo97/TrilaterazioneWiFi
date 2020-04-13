@@ -25,7 +25,9 @@ var pulseDim = [70, 70]
 //con i vari metodi on open e on message.
 //---------------------------------------------------------------------
 async function connect() {
-
+    markers.clearLayers();
+    text = "Trascina per correggere <br> la posizione"
+    markers = L.layerGroup([createCustomMarker(text, 46.8, 11.8, homeUrl, true, homeDim, false)]).addTo(map);
     var btn = document.getElementById("btn");
     var elimina = document.getElementById("elimina");
     var find = document.getElementById("findCoordinate");
@@ -56,6 +58,9 @@ async function connect() {
             var lng = wsMsg.split('-')[4];
             var nome = wsMsg.split('-')[2];
             createRow(lat, lng, nome);
+            markers.clearLayers();
+            text = "Trascina per correggere <br> la posizione"
+            markers = L.layerGroup([createCustomMarker(text, lat, lng, homeUrl, true, homeDim, false)]).addTo(map);
             map.setView([lat, lng], 19);
             //console.log(wsMsg);
 
@@ -107,8 +112,7 @@ function getLocation() {
         }
     }
     catch{
-        text = "Trascina per correggere \n la posizione"
-        markers = L.layerGroup([createCustomMarker(text, 45, 10, homeUrl, true, homeDim, false)]).addTo(map);
+
     }
 
 }
