@@ -8,7 +8,7 @@ Questo progetto permette di effettuare la trilaterazione di dispositivi basati s
 
 ## Tecnologie
 Questo progetto è stato creato con l'utilizzo di:
-* [Bootstrap](https://getbootstrap.com/)
+* [Bootstrap](https://getbootstrap.com/) version: 4.4.1
 * [Python](https://www.python.org/downloads/) version: 3.7.5
 * [Scapy](https://scapy.readthedocs.io/en/latest/installation.html) version: 2.4.2
 * [Flask](https://flask.palletsprojects.com/en/1.1.x/) version: 1.1.1 
@@ -44,7 +44,7 @@ Inserire nella cartella static l'immagine della mappa indoor realizzata inn un f
 
 Modificare inserendo l' indirizzo ip del dispositivo il quale si vuole utilizzare e il nome dell'interfaccia di rete all'interno dei file __ init__.py e web_socket.py 
 
-![](Screencast 2020-04-23 19_03_41.gif)
+![demo](Screencast 2020-04-23 19_03_41.gif)
 
 Avviare prima il server tramite il comando
 ```
