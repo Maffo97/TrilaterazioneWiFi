@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 
@@ -31,8 +31,8 @@
             <th>Nome</th>
             <th>Latitudine</th>
             <th>Longitudine</th>
-            <th>Indoor</th>
             <th>Durata</th>
+            <th>       </th>
             <th></th>
         </table>
 
@@ -66,6 +66,7 @@
             </div>
         </div>
 
+
         <input type="submit" style="font-size:1.1vw" value="Aggiungi dispositivo" class="btn btn-success" id="btn"
             onclick="addDevice()" disabled>
         <input type="submit" style="font-size:1.1vw" value="Elimina dispositivi" class="btn btn-danger" id="elimina"
@@ -83,6 +84,16 @@
                 aria-valuemax="100" style="width:0%;">
             </div>
         </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" onchange="IndoorMap()" type="radio" name="inlineRadioOptions"
+                id="inlineRadio1" value="Indoor" checked>
+            <label class="form-check-label" for="inlineRadio1">Mappa Indoor</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" onchange="LeafletMap()" type="radio" name="inlineRadioOptions"
+                id="inlineRadio2" value="Outdoor" checked>
+            <label class="form-check-label" for="inlineRadio2">Mappa globale</label>
+        </div>
     </div>
 
 
@@ -97,18 +108,47 @@
     </div>
 
 
-    <div id="map"></div>
-    <script>
-        var mylat = '41.86956';
-        var mylong = '12.524414';
-        var myzoom = '4';
-        var map = L.map('map').setView([mylat, mylong], myzoom);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-    </script>
+    <div id="map">
+    </div>
+    <div id="map1">
     </div>
 </body>
+
+<div class="modal fade" id="modalForm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">Inserisci i fattori di scala</h5>
+                <button type="button" id="close" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-image" style="background-image: url()">
+                <form id="inputs" class="needs-validation" novalidate="">
+                    <div class="form-group mx-2 mb-3">
+                        <label for="Altezza">Altezza</label>
+                        <input type="text" class="form-control" onkeypress="return isNumberKey(event)" id="altezza"
+                            placeholder="inserire valore in metri" required>
+                    </div>
+                    <div class="form-group mx-2">
+                        <label for="Lunghezza">Lunghezza</label>
+                        <input type="text" class="form-control" onkeypress="return isNumberKey(event)" id="lunghezza"
+                            placeholder="inserire valore in metri" required>
+                    </div>
+                    <div class="form-group mx-2 mb-3">
+                        <label for="File">Nome del file</label>
+                        <input type="text" class="form-control" id="nomeFile" placeholder="Nomefile"
+                            required>
+                        </div>
+                    </div>
+                </form>
+                <div class="modal-footer justify text-14">
+                    <button id="submit" type="submit" class="btn btn-primary" data-toggle="modal"
+                        data-target="#modalForm">aggiungi la mappa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 </html>

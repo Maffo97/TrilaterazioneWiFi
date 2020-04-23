@@ -24,9 +24,9 @@ body{
     border-radius: 5px;
     background-color: #f2f2f2;
     padding: 5px;
-    top: 22%;
+    top: 25%;
     width: 29%;
-    height: 30%;
+    height: 32%;
     position: absolute;
     overflow: auto;
 }
@@ -37,6 +37,17 @@ body{
      left: 30%;
      top: 22%;
  }
+
+ #map1 { 
+  width: 70%;
+  height: 78%;
+  position: absolute;
+  left: 30%;
+  top: 22%;
+  display: none;
+  visibility: hidden;
+
+}
 
 
 
@@ -58,7 +69,7 @@ body{
   border-radius: 5px;
   padding: 1px;
   width: 29%;
-  height: 21%;
+  height: 24%;
   text-align: center;
   overflow: auto;
  }
@@ -68,10 +79,147 @@ body{
   position: absolute;
   border-radius: 5px;
   width: 29%;
-  height: 47%;
-  top: 53%;
+  height: 41%;
+  top: 58%;
   overflow: auto;
   text-align: center;
  }
+
+
+ h1 {
+  font-size: 45px !important;
+}
+
+.justify {
+  text-align: justify;
+}
+
+.text-14 {
+  font-size: 14px;
+}
+
+/* MODAL */
+
+.bg-image {
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.modal-content {
+  border: none;
+  border-radius: 0px !important;
+}
+
+.form-control {
+  border-radius: 0px !important;
+  border: 0px;
+  border-bottom: 1.3px solid #0069d9;
+}
+
+.form-control:valid {
+  border-color: #0069d9 !important;
+}
+
+.was-validated .form-control:valid:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.modal-footer {
+  padding: 0;
+}
+
+@media (min-width: 425px) {
+  .modal-content {
+      margin: 0 50px;
+  }
+  .modal-header {
+      padding-top: 20px !important;
+      padding-bottom: 20px !important;
+      padding-left: 35px;
+  }
+  .modal-body {
+      padding-top: 50px !important;
+      padding-bottom: 50px !important;
+      margin: 0 10px;
+  }
+}
+
+@media (max-width: 424px) {
+  .modal-content {
+      margin: 0 20px;
+  }
+  .modal-header {
+      padding: 20px auto;
+      padding-left: 18px;
+  }
+  .modal-title {
+      font-size: 17px;
+  }
+  .modal-body {
+      padding-top: 30px !important;
+      padding-bottom: 30px !important;
+      padding-left: 0px !important;
+      padding-right: 0px !important;
+      margin: 0 10px;
+  }
+}
+
+.close {
+  color: #0069d9da;
+  opacity: 6;
+  text-shadow: 1px 1px 1px rgb(228, 228, 228);
+  outline: 0 !important;
+}
+
+.close:hover {
+  color: #0069d9;
+  opacity: 6;
+}
+
+.btn-primary {
+  height: 100%;
+  width: 100%;
+  padding: 20px 0;
+  color: white;
+  background-color: #0069d9da;
+  border-color: #0069d9d3;
+  border-radius: 0px !important;
+}
+
+.btn-primary:hover {
+  color: #fff;
+  background-color: #0069d9;
+  border-color: #0066d3;
+}
+
+.btn-primary:not(:disabled):not(.disabled):active {
+  color: white;
+  background-color: #0069d9;
+  border-color: #0066d3;
+}
+
+.btn-primary:focus {
+  box-shadow: 0 0 0 !important;
+}
+
+.shadow {
+  border-radius: 0px !important;
+  box-shadow: 0 0rem 1rem rgba(0, 0, 0, 0.808)!important;;
+}
+
+/* SECTION */
+
+.section {
+  background-color: #0069d9c0;
+  color: white;
+}
  
- 
+.invalid input:required:invalid {
+  background: #BE4C54;
+}
+
+/* Mark valid inputs during .invalid state */
+.invalid input:required:valid {
+  background: #17D654;
+}

@@ -41,7 +41,7 @@ print(f"[From server]:Port: {str(port)}")
 
 # nel mio ambiente casalingo il coefficiente di dispersione del segnale
 # e dopo l'analisi dei dati l'RSSI medio a distanza di 1m è 30
-pathLossC = 3.08
+pathLossC = 4.61
 
 # classe per i dati del risultato della query che cerca almeno 3 rilevazioni
 # di un singolo dispositivo
@@ -74,7 +74,7 @@ class VendorRSSId0:
         return vendor
 
 
-Apple = ("Apple, Inc.", -31)
+Apple = ("Apple, Inc.", -30)
 Samsung = ("Samsung Electronics Co.,Ltd", -28)
 
 Vendor = [Apple, Samsung]
@@ -85,7 +85,7 @@ Vendor = [Apple, Samsung]
 
 
 def distance(vendor, RSSI):
-    RSSId0 = -30
+    RSSId0 = -29
     for x in Vendor:
         if(vendor == x[0]):
             RSSId0 = x[1]
@@ -106,40 +106,6 @@ def findVendor(macAdress):
         pass
 #########################################################
 
-#Funzione di trilaterazoine semplice
-#########################################################
-def trilateration(x1, y1, r1, x2, y2, r2, x3, y3, r3):
-    A = 2*x2 - 2*x1
-    B = 2*y2 - 2*y1
-    C = r1**2 - r2**2 - x1**2 + x2**2 - y1**2 + y2**2
-    D = 2*x3 - 2*x2
-    E = 2*y3 - 2*y2
-    F = r2**2 - r3**2 - x2**2 + x3**2 - y2**2 + y3**2
-    x = (C*E - F*B) / (E*A - B*D)
-    y = (C*D - A*F) / (B*D - A*E)
-    return x, y
-#########################################################
-
-
-
-def gps_solve(distances_to_station, stations_coordinates):
-    stations = list(np.array(stations_coordinates))
-    def error(x, c, r):
-        return sum([(np.linalg.norm(x - c[i]) - r[i]) ** 2 for i in range(len(c))])
-    l = len(stations)
-    S = 0
-    W = []
-    for x in distances_to_station:
-        S+=x[0]
-	# compute weight vector for initial guess
-    for w in distances_to_station:
-        x = ((l - 1) * S) / (S - w[0])
-        W.append(x)    
-	# get initial guess of point location
-    x0 = sum([W[i] * stations[i] for i in range(l)])
-	# optimize distance from signal origin to border of spheres
-    return minimize(error, x0, args=(stations, distances_to_station), method='Nelder-Mead').x
-
 
 # metodo per sapere l'orario
 #########################################################
@@ -158,6 +124,7 @@ try:
                                 nome CHAR(20) NOT NULL,
                                 latitudine FLOAT NOT NULL,
                                 longitudine FLOAT NOT NULL,
+                                indoor INTEGER NOT NULL,
                                 UNIQUE(latitudine,longitudine))'''
     cursor.execute(sqlite_create_table_query)
     sqliteConnection.commit()
@@ -253,6 +220,16 @@ async def echo(websocket, path):
         #print(f"[From client]: {message}")
         protocol = message.split("-")[0]
 
+
+        if protocol == "$id":
+            query = message.split("-")[1]
+            data = None
+            print("[CLIENT][" + tempo() + "]: " + query)
+            if(executeQuery(query, data)):
+                await websocket.send("$id-" + str(indexDevice[0][0]))
+            else:
+                await websocket.send("$400:Bad Request")
+
         # inserimento dati nel database
         #########################################################
         if protocol == "$insert":
@@ -260,9 +237,10 @@ async def echo(websocket, path):
             lat = message.split("-")[2]
             lng = message.split("-")[3]
             nome = message.split("-")[4]
-            data = (nome, lat, lng)
+            indoor = message.split("-")[5]
+            data = (nome, lat, lng, indoor)
             print("[CLIENT][" + tempo() + "]: INSERT INTO DB nome:" + nome +
-                  " latitudine: " + lat + " longitudine: " + lng)
+                  " latitudine: " + lat + " longitudine: " + lng + "indoor: " + indoor)
             if(executeQuery(query, data)):
                 await websocket.send("$insert:200:OK")
             else:
@@ -274,7 +252,7 @@ async def echo(websocket, path):
         if protocol == "$delete":
             query = message.split("-")[1]
             data = None
-            print("[CLIENT][" + tempo() + "]: DELETE FROM Dispositivi")
+            print("[CLIENT][" + tempo() + "]: " + query)
             if(executeQuery(query, data)):
                 await websocket.send("$200:OK")
             else:
@@ -290,6 +268,7 @@ async def echo(websocket, path):
             global ID
             ID = message.split("-")[1]
             timer = int(message.split("-")[2])
+            indoor = message.split("-")[3]
             data = None
             msg = "[CLIENT][{}]: Scan del dispositivo: {} per {} secondi"
             print(msg.format(tempo(), str(ID), timer))
@@ -302,30 +281,60 @@ async def echo(websocket, path):
             print("[SERVER][" + tempo() + "]: scansione terminata")
             await websocket.send("$end")
 
-            query = "select macadress FROM(SELECT * FROM ProbeRequest GROUP by macadress, nodeid) GROUP by macadress HAVING COUNT(macadress) >= 3"
+            query = "select macadress FROM(SELECT * FROM ProbeRequest JOIN Dispositivi on Dispositivi.ID == ProbeRequest.nodeID " + \
+                      "WHERE Dispositivi.indoor = " + indoor + " " + \
+                      "GROUP by macadress, nodeid ) GROUP by macadress HAVING COUNT(macadress) >= 3"
             data = None
             if(executeQuery(query, data)):
                 for x in indexDevice:
                     for y in x:
                         query = "select macadress, nodeid, distance, vendor, latitudine, longitudine from ProbeRequest join Dispositivi on ProbeRequest.nodeID = Dispositivi.id where ProbeRequest.macadress = '" + \
-                            y+"'"
-                        try:
+                              y+"' and Dispositivi.indoor == " + indoor
+                        #query = "select macadress,nodeid, avg(distance), vendor, latitudine, longitudine from ProbeRequest " +\
+                               # "join Dispositivi on ProbeRequest.nodeID = Dispositivi.id " + \
+                               # "where ProbeRequest.macadress = '" + y +"' and Dispositivi.indoor == " + indoor + " "  + \
+                               # "GROUP BY nodeid"
+                        try:                          
                             if(executeQuery(query, data)):
-                                P =lx.Project(mode='2D',solver='LSE_GC')
-                                t,label = P.add_target()
+                                vendor = None
+                                x = False
+                                anchor = []
+                                measure = []
                                 for z in indexDevice:
+                                    print(z)
+                                    x = True
                                     vendor = z[3]
                                     macAdr = z[0]
-                                    P.add_anchor(str(z[1]),(float(z[5]),float(z[4])))
-                                    t.add_measure(str(z[1]),float(z[2]*(10**-5)))
+                                    #P.add_anchor(str(z[2]),(float(z[5]),float(z[4])))
+                                    anchor.append([str(z[1]),float(z[5]),float(z[4])])
+                                    print(indoor)
+                                    if indoor == str(1):
+                                        #t.add_measure(str(z[2]),float(z[2])) #10 per la scala indoor
+                                        measure.append([str(z[1]),float(z[2])])
+                                    else:
+                                        #t.add_measure(str(z[2]),float(z[2]*(10**-5)))
+                                        measure.append([str(z[1]),float(z[2])*(10**-5)]) #10**-5 per la mappa           
                                 if(vendor == None):
                                     vendor = "Vendor non riconosciuto"
 
-                                P.solve()
-                                p = t.loc
+                                if x:
+                                    P = lx.Project(mode='2D',solver='LSE')
+                                    for h in anchor:
+                                        P.add_anchor(str(h[0]),(float(h[1]),float(h[2])))
+                                    
+                                    t,label = P.add_target()
 
-                                print(p.x,p.y)
-                                await websocket.send("$pos-"+str(p.x)+"-"+str(p.y)+"-"+macAdr+"-"+vendor)
+                                    for s in measure:
+                                        t.add_measure(str(s[0]),float(s[1]))
+
+                                    
+                                    P.solve()
+                                    p = t.loc
+                                    print(p.x,p.y)
+                                    await websocket.send("$pos&"+str(p.x)+"&"+str(p.y)+"&"+macAdr+"&"+vendor+"&"+indoor)
+                                else:
+                                    await websocket.send("$pos&nessun riscontro trovato")
+                                
                         except IndexError as e:
                             print(
                                 Fore.RED+ "[SERVER][" + tempo() + "]: " + Fore.RESET, e)
@@ -341,19 +350,21 @@ async def echo(websocket, path):
         #########################################################
         if protocol == "$db":
             query = message.split("-")[1]
+            indoor = message.split("=")[1]
             data = None
-            print("[CLIENT][" + tempo() + "]: SELECT * FROM Dispositivi")
+            print("[CLIENT][" + tempo() + "]: " + query)
             if(executeQuery(query, data)):
                 data = ""
                 for x in indexDevice:
                     for y in x:
-                        data = data + "-" + str(y)
+                        data = data + "-" + str(y)                     
                     await websocket.send("$db" + data)
                     data = ""
             else:
                 await websocket.send("$400:BadRequest")
 
-            query = "SELECT MAX(ts) FROM ProbeRequest"
+            query = "SELECT  MAX(ts) FROM ProbeRequest JOIN Dispositivi ON ProbeRequest.nodeID = Dispositivi.id " + \
+                    "where Dispositivi.indoor = " + indoor
             data = None
             if(executeQuery(query, data)):
                 await websocket.send("$ts-" + str(indexDevice[0][0]))
