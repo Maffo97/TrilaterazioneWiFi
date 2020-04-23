@@ -44,7 +44,7 @@ Inserire nella cartella static l'immagine della mappa indoor realizzata inn un f
 
 Modificare inserendo l' indirizzo ip del dispositivo il quale si vuole utilizzare e il nome dell'interfaccia di rete all'interno dei file __ init__.py e web_socket.py 
 
-![demo](/Screencast 2020-04-23 19_03_41.gif)
+![demo](https://github.com/Maffo97/TrilaterazioneWiFi/blob/master/Screencast%202020-04-23%2019_03_41.gif?raw=true)
 
 Avviare prima il server tramite il comando
 ```
