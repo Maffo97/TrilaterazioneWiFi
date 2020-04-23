@@ -44,7 +44,7 @@ Inserire nella cartella static l'immagine della mappa indoor realizzata inn un f
 
 Modificare inserendo l' indirizzo ip del dispositivo il quale si vuole utilizzare e il nome dell'interfaccia di rete all'interno dei file __ init__.py e web_socket.py 
 
-![demo](Screencast 2020-04-23 19_03_41.gif)
+![demo](/Screencast 2020-04-23 19_03_41.gif)
 
 Avviare prima il server tramite il comando
 ```
