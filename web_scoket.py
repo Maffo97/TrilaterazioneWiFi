@@ -26,7 +26,7 @@ ID = 1
 
 # Inizializzazione socket
 #########################################################
-ipAddress = socket.gethostbyname(socket.gethostname())
+ipAddress = "127.0.0.1"
 interface = "wlx00c0caa71dd5"
 port = 8888
 #########################################################
@@ -374,6 +374,6 @@ async def echo(websocket, path):
         #########################################################
 
 asyncio.get_event_loop().run_until_complete(
-    websockets.serve(echo, '127.0.0.1', port))
+    websockets.serve(echo, ipAddress, port))
 asyncio.get_event_loop().run_forever()
 ##########################################RED###############
