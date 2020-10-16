@@ -7,7 +7,8 @@ RUN apt update && \
 
 WORKDIR /app
 
-RUN git clone https://github.com/Maffo97/TrilaterazioneWiFi.git /app
+COPY . /app
+#RUN git clone https://github.com/Maffo97/TrilaterazioneWiFi.git /app
 
 RUN pip3 install -r Docker/requirements.txt
 
