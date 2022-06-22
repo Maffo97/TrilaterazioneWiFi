@@ -4,6 +4,6 @@ Flask==1.1.1
 colorama==0.4.3
 websockets==8.1
 mac-vendor-lookup==0.1.11
-numpy==1.19.2
+numpy==1.22.0
 scipy==1.5.2
 shapely==1.7.1
